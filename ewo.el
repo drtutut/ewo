@@ -40,6 +40,9 @@
 ;;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(provide 'ewo)
+(require 'ox)
+
 (defvar ewo-name "Retry/Abort")
 (defvar ewo-root-dir "~/Documents/www/MonSite/org")
 (defvar ewo-publish-dir "~/public_html")
@@ -288,7 +291,7 @@ CATLIST is the list of categories."
 Only allowed functions with allowed args is possible, and args
 must be in a list of allowed variables."
   (when (eq backend 'html)
-      ;; build the environment of the function calls (i.e. variables available to the user in templates
+    ;; build the environment of the function calls (i.e. variables available to the user in templates
     (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
     (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file))))
       (princ (format "catlevel is %s\n" ewo:catlevel))
@@ -307,7 +310,7 @@ must be in a list of allowed variables."
   fstring)
 
 
-;;  Enregistrer la fonction filtre
+;;  Register filter function
 (setq org-export-filter-final-output-functions
       '(ewo-filter-prepost))
 
@@ -315,8 +318,40 @@ must be in a list of allowed variables."
 ;; Header filter
 
 (defun ewo-filter-headline (fstring backend channel)
-  (princ (format "head : %s\n\n" fstring))
-  (princ (format "channel : %s\n\n" channel))
+  "Surround h2 headers with div class panel-header, and add class
+panel-body to de div class outline-text-2. Do this only if
+containing outline div is of class panel."
+  (princ (format "head : \"%s\"\n\n" fstring))
+  ;; (princ (format "channel : %s\n\n" channel))
+  (let ((re "^\\(<div.+class=\"outline-2.+panel.+\">[[:space:]]*\n\\)\\(<h2.+>.+</h2>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
+    (when (string-match re fstring)
+      (princ "=== MATCH ! ===\n")
+      (let ((start-outline-2 (match-beginning 1))
+	    (end-outline-2 (match-end 1))
+	    (start-h2 (match-beginning 2))
+	    (end-h2 (match-end 2))
+	    (start-div-body (match-beginning 3))
+	    (end-div-body (match-end 3))
+	    (start-tail (match-beginning 5))
+	    (end-tail (match-end 5)))
+	(setq fstring (concat
+		       (substring fstring start-outline-2 end-outline-2)
+		       "<div class=\"panel-heading\">\n"
+		       (let ((h2 (substring fstring start-h2 end-h2)))
+			 (if (string-match "^\\(.+class=\".+\\)\\(\".+\\)$" h2)
+			     (let ((pre (match-string 1 h2))
+				   (post (match-string 2 h2)))
+			       (concat pre " panel-title" post))
+			   (if (string-match "^\\(<h2.+\\)\\(>.+$\\)" h2) ; should match
+			       (let ((pre (match-string 1 h2))
+				     (post (match-string 2 h2)))
+				 (concat pre " class=\"panel-title\"" post))
+			     (substring fstring start-h2 end-h2))))
+		       "</div>\n"
+		       "<div class=\"panel-body\">\n"
+		       (substring fstring start-div-body end-div-body)
+		       "\n</div>\n"
+		       (substring fstring start-tail nil))))))
   fstring)
 
 (setq org-export-filter-headline-functions 
