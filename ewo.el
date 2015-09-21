@@ -71,6 +71,7 @@
 
 ;; entête de page de l'accueil
 (defvar ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
+<link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"css/bootstrap.min.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"css/mystyle.css\" type=\"text/css\"/>
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -83,6 +84,7 @@
 
 ;; entête de page des catégories
 (defvar ewo-cat-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
+<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mytypo.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/bootstrap.min.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mystyle.css\" type=\"text/css\"/>
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
