@@ -169,6 +169,7 @@
      :style-include-default: nil
      :section-numbers nil
      :table-of-contents nil
+     :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
      :html-head ewo-cat-html-head
      :html-preamble (ewo-html-nav name)
      :html-postamble ewo-html-postamble)))
@@ -188,7 +189,7 @@ CATLIST is the list of categories."
     (cons
      (ewo-cat-props (car catlist))
      (ewo-cat-project-alist (cdr catlist)))))
-  
+
 
 (setq org-publish-project-alist
       (append
@@ -204,6 +205,7 @@ CATLIST is the list of categories."
 	 :style-include-default: nil
 	 :section-numbers nil
 	 :table-of-contents nil
+	 :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	 :html-head ewo-html-head
 	 :html-preamble (ewo-html-nav nil)
 	 :html-postamble ewo-html-postamble))
@@ -317,15 +319,21 @@ must be in a list of allowed variables."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Header filter
 
+;;; TODO : Modularize this ! 
 (defun ewo-filter-headline (fstring backend channel)
-  "Surround h2 headers with div class panel-header, and add class
-panel-body to de div class outline-text-2. Do this only if
-containing outline div is of class panel."
-  (princ (format "head : \"%s\"\n\n" fstring))
+  "Surround h[2-5] headers with div class panel-header, and add class
+panel-body to de div class outline-text-[2-5]. Do this only if
+containing outline div is of class panel. 
+
+Second task is to surround sections with published
+BOOSTRAP_COLUMN property with a div with the corresponding
+class."
+  (when (not (eq backend 'html)) fstring) 
+  ;; (princ "*************************************************************************\n")
+  ;; (princ (format "head : \"%s\"\n\n" fstring))
   ;; (princ (format "channel : %s\n\n" channel))
-  (let ((re "^\\(<div.+class=\"outline-2.+panel.+\">[[:space:]]*\n\\)\\(<h2.+>.+</h2>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
+  (let ((re "^\\(<div.+class=\"outline-[2-5].+panel.+\">[[:space:]]*\n\\)\\(<h[2-5].+>.+</h[2-5]>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
     (when (string-match re fstring)
-      (princ "=== MATCH ! ===\n")
       (let ((start-outline-2 (match-beginning 1))
 	    (end-outline-2 (match-end 1))
 	    (start-h2 (match-beginning 2))
@@ -342,7 +350,7 @@ containing outline div is of class panel."
 			     (let ((pre (match-string 1 h2))
 				   (post (match-string 2 h2)))
 			       (concat pre " panel-title" post))
-			   (if (string-match "^\\(<h2.+\\)\\(>.+$\\)" h2) ; should match
+			   (if (string-match "^\\(<h[2-5].+\\)\\(>.+$\\)" h2) ; should match
 			       (let ((pre (match-string 1 h2))
 				     (post (match-string 2 h2)))
 				 (concat pre " class=\"panel-title\"" post))
@@ -352,8 +360,70 @@ containing outline div is of class panel."
 		       (substring fstring start-div-body end-div-body)
 		       "\n</div>\n"
 		       (substring fstring start-tail nil))))))
+  ;; now check if properties regarding bootstrap rows and columns have
+  ;; been set. Add divs accordingly. This is soooo weird (because it
+  ;; relies on filter application order)....
+
+  (when ewo-bootstrap-column
+    (setq fstring (concat
+		   "<div class=\"" ewo-bootstrap-column "\">\n"
+		   fstring
+		   "</div> <!-- bootstrap column -->\n"))
+    (setq ewo-boostrap-column nil))
+  (when ewo-bootstrap-row-begin
+    (setq fstring (concat 
+		   "<div class=\"row\">\n"
+		   fstring))
+    (setq ewo-bootstrap-row-begin nil))
+  (when ewo-bootstrap-row-end
+    (setq fstring (concat 
+		   fstring
+		   "</div>\n"))
+    (setq ewo-bootstrap-row-end nil))
+  
   fstring)
 
 (setq org-export-filter-headline-functions 
       '(ewo-filter-headline))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; drawer filter
+
+(defvar ewo-bootstrap-column nil)
+(defvar ewo-bootstrap-row-begin nil)
+(defvar ewo-bootstrap-row-end nil)
+
+;; careful : relies on the fact that this filter will be applied before
+;; headline filter  (`ewo-filter-headline').
+(defun ewo-filter-drawer (fstring backend channel)
+  "Extract information from BOOTSTRAP_COLUMN, BOOTSTRAP_ROW_BEGIN
+and BOOTSTRAP_ROW_END properties. This information will be used
+by the headline filter `ewo-filter-headline'."
+  (when (not (eq backend 'html)) nil)
+  ;; (princ (format "drawer : \"%s\"\n" fstring))
+  (when (string-match "^BOOTSTRAP_COLUMN:[[:space:]]+\\(.+\\)[[:space:]]*$" fstring)
+    ;; (princ "COLUMN OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-column (match-string 1 fstring)))
+  (when (string-match "^BOOTSTRAP_ROW_BEGIN:[[:space:]]+.+[[:space:]]*$" fstring)
+    ;; (princ "ROW BEGIN OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-row-begin t))
+  (when (string-match "^BOOTSTRAP_ROW_END:[[:space:]]+.+[[:space:]]*$" fstring)
+    ;; (princ "ROW END OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-row-end t))
+  ;; return a newline because filter system doesn't like empty strings
+  "\n")
+
+(setq org-export-filter-property-drawer-functions
+      '(ewo-filter-drawer))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; section filter
+
+(defun ewo-filter-section (fstring backend channel)
+  (when (not (eq backend 'html)) nil)
+  (princ (format "section : \"%s\"\n" fstring)))
+
+(setq org-export-filter-section-functions
+      '())
 
