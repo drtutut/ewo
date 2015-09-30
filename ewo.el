@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; My blog project
+;;; Easy Website with Org (EWO) project
 ;;;
 ;;; Generates a site organized in categories. Relies on the bootstrap
 ;;; framework by default but this can be customized.
@@ -18,8 +18,10 @@
 ;;; In order to create a static category, set the `:type' attribute to
 ;;; `static'.
 ;;;
-;;; blogging categories
+;;; blogging categories 
 ;;; -------------------
+;;;
+;;; [NOT IMPLEMENTED YET]
 ;;;
 ;;; TODO: to be worked out and redifined. Not implemented.
 ;;;
@@ -41,22 +43,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide 'ewo)
+(require 'org)
 (require 'ox)
+(require 'ox-publish)
 
-(defvar ewo-name "Retry/Abort")
+(defvar ewo-name "EWO")
 (defvar ewo-root-dir "~/Documents/www/MonSite/org")
 (defvar ewo-publish-dir "~/public_html")
 (defvar ewo-categories
-  '(("enseignement"
-     :label "Enseignement"
-     :directory "Enseignement"
+  '(("teaching"
+     :label "Teaching"
+     :directory "Teaching"
      :icon "education"
      :type static)
-    ("recherche"
-     :label "Recherche"
-     :directory "Recherche"
+    ("research"
+     :label "Research"
+     :directory "Research"
      :icon "eye-open"
      :type static)))	       
+
+(defvar ewo-doc-extensions "pdf\\|doc\\|odt\\|ods\\|odp\\|odg\\|tar.gz\\|tgz\\|tar.bz2\\|zip"
+  "Allowed extensions for documents")
 
 (defun ewo-get-cat-prop (cat prop)
   "Gets the property of a category"
@@ -79,7 +86,9 @@
 <!--[if lt IE 9]>
   <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
   <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
-<![endif]-->"
+<![endif]-->
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
 "entête de la page d'accueil")
 
 ;; entête de page des catégories
@@ -92,7 +101,9 @@
 <!--[if lt IE 9]>
   <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
   <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
-<![endif]-->"
+<![endif]-->
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
 "entête des pages des catégories")
 
 ;; Builds the navigation links to the categories. `catlist' is the
@@ -110,14 +121,20 @@
 	   " class=\"active\"" "")
        "><a href=\"" 
        (if curcat "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") 
-       (plist-get pl :directory) "\"><span class=\"glyphicon glyphicon-" (plist-get pl :icon) "\" aria-hidden=\"true\"></span> " (plist-get pl :label) "</a></li>\n"
+       (plist-get pl :directory) "\">"
+       (if (plist-get pl :icon) 
+	   (concat "<span class=\"glyphicon glyphicon-" (plist-get pl :icon) "\" aria-hidden=\"true\"></span> ")
+	 "")
+       (plist-get pl :label) "</a></li>\n"
        (ewo-categories-nav curcat (cdr catlist))))))
 
 (defun ewo-rootlink (level)
-  " Generates an up link to root depending on LEVEL"
+  "Generates an up link to root depending on LEVEL"
   (if (= level 0)
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
+
+(defvar ewo-navbar-class "navbar navbar-inverse navbar-fixed-top")
 
 ;; Builds the navigation)
 ;; if `iscategory' is true, it means that we are in a category page,
@@ -125,7 +142,7 @@
 (defun ewo-html-nav (catname)
   (concat 
    "<header>
-  <nav class=\"navbar navbar-inverse navbar-fixed-top\">
+  <nav class=\"" ewo-navbar-class "\">
     <div class=\"container\">
       <div class=\"navbar-header\">
         <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
@@ -147,9 +164,7 @@
 </header>"))
 
 (defvar ewo-html-postamble 
-  "<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
+  "<!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>js/bootstrap.min.js\"></script>")
 
 ;; génère les propriétés de publication d'une catégorie
@@ -177,7 +192,6 @@
      :html-postamble ewo-html-postamble)))
 
 
-		
 
 ;; génère la liste de publication du projet pour les catégories 
 (defun ewo-cat-project-alist (catlist)
@@ -193,61 +207,87 @@ CATLIST is the list of categories."
      (ewo-cat-project-alist (cdr catlist)))))
 
 
-(setq org-publish-project-alist
-      (append
-       (list
-	(list
-	 "orgfiles"
-	 :base-directory ewo-root-dir
-	 :base-extension "org"
-	 :exclude "^\\(.*~\\|^.#.*\\)$"
-	 :publishing-directory ewo-publish-dir
-	 :publishing-function 'org-html-publish-to-html
-	 :headline-levels 3
-	 :style-include-default: nil
-	 :section-numbers nil
-	 :table-of-contents nil
-	 :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
-	 :html-head ewo-html-head
-	 :html-preamble (ewo-html-nav nil)
-	 :html-postamble ewo-html-postamble))
-       (ewo-cat-project-alist ewo-categories)
-       (list
-	(list
-	 "images"
-	 :base-directory (concat ewo-root-dir "/images")
-	 :base-extension "jpg\\|gif\\|png"
-	 :exclude "^\\(.*~\\|^.#.*\\)$"
-	 :publishing-directory (concat ewo-publish-dir "/images")
-	 :publishing-function 'org-publish-attachment)
-	
-	(list 
-	 "css"
-	 :base-directory (concat ewo-root-dir "/css")
-	 :base-extension "css\\|map"
-	 :exclude "^\\(.*~\\|^.#.*\\)$"
-	 :publishing-directory (concat ewo-publish-dir "/css")
-	 :publishing-function 'org-publish-attachment)
-	
-	(list
-	 "js"
-	 :base-directory (concat ewo-root-dir "/js")
-	 :base-extension "js"
-	 :exclude "^\\(.*~\\|^.#.*\\)$"
-	 :publishing-directory (concat ewo-publish-dir "/js")
-	 :publishing-function 'org-publish-attachment)
-	
-	(list
-	 "fonts"
-	 :base-directory (concat ewo-root-dir "/fonts")
-	 :base-extension "woff2\\|woff\\|ttf\\|svg\\|eot"
-	 :exclude "^\\(.*~\\|^.#.*\\)$"
-	 :publishing-directory (concat ewo-publish-dir "/fonts")
-	 :publishing-function 'org-publish-attachment)
-	`("website" :components ,(append 
-				  '("orgfiles" "images" "css" "js" "fonts")
-				  (ewo-cat-names ewo-categories))))))
+(defun ewo-gen-project-alist ()
+  "Progect alist regeneration. Must be called after any preamble content
+modification, e.g. if you tweak these parameters in your
+.emacs)."
+  (setq org-publish-project-alist
+	(append
+	 (list
+	  (list
+	   "orgfiles"
+	   :base-directory ewo-root-dir
+	   :base-extension "org"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory ewo-publish-dir
+	   :publishing-function 'org-html-publish-to-html
+	   :headline-levels 3
+	   :style-include-default: nil
+	   :section-numbers nil
+	   :table-of-contents nil
+	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
+	   :html-head ewo-html-head
+	   :html-preamble (ewo-html-nav nil)
+	   :html-postamble ewo-html-postamble))
+	 (ewo-cat-project-alist ewo-categories)
+	 (list
+	  (list
+	   "images"
+	   :base-directory (concat ewo-root-dir "/images")
+	   :base-extension "jpg\\|gif\\|png"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat ewo-publish-dir "/images")
+	   :publishing-function 'org-publish-attachment)
 	  
+	  (list 
+	   "css"
+	   :base-directory (concat ewo-root-dir "/css")
+	   :base-extension "css\\|map"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat ewo-publish-dir "/css")
+	   :publishing-function 'org-publish-attachment)
+	  
+	  (list
+	   "js"
+	   :base-directory (concat ewo-root-dir "/js")
+	   :base-extension "js"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat ewo-publish-dir "/js")
+	   :publishing-function 'org-publish-attachment)
+
+	  (list
+	   "documents"
+	   :base-directory (concat ewo-root-dir "/documents")
+	   :base-extension ewo-doc-extensions
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat ewo-publish-dir "/js")
+	   :publishing-function 'org-publish-attachment)
+	  
+	  (list
+	   "fonts"
+	   :base-directory (concat ewo-root-dir "/fonts")
+	   :base-extension "woff2\\|woff\\|ttf\\|svg\\|eot"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat ewo-publish-dir "/fonts")
+	   :publishing-function 'org-publish-attachment)
+
+	  `("website" :components ,(append 
+				    '("orgfiles" "images" "css" "js" "fonts" "documents")
+				    (ewo-cat-names ewo-categories)))))))
+
+;; call project alist generation function immediately !
+(ewo-gen-project-alist)
+
+;; main entry point ! 
+;;;###autoload
+(defun ewo-publish ()
+  "Publish the currently defined website."
+  (interactive)
+  (ewo-gen-project-alist)
+  (org-publish "website"))
+  
+
+  
 (defun ewo-int-getlevel (cattree pos)
   "Gets the category level given a category tree."
   (if (string-match "/" cattree pos)
@@ -297,26 +337,44 @@ must be in a list of allowed variables."
   (when (eq backend 'html)
     ;; build the environment of the function calls (i.e. variables available to the user in templates
     (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
-    (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file))))
-      (princ (format "catlevel is %s\n" ewo:catlevel))
-      (while (string-match "<lisp>\\(.+\\)</lisp>" fstring)
+    (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
+	  (search-start nil))
+      (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
 	(let* ((start (match-beginning 1))
 	       (end   (match-end 1))
 	       (strform (substring fstring start end))
 	       (form (read strform)))
+	  (princ (format "===== lisp exp is \"%s\"\n" strform))
 	  (if (ewo-secure-formp form)
 	      (let ((result (eval form)))
 		(setq fstring (concat
 			       (substring fstring 0 (- start 6)) ; jq avant <lisp>
 			       result
 			       (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
-	    (error "unsecure or malformed expression : %s" strform))))))
+	    (error "unsecure or malformed expression : %s" strform))
+	  (setq search-start end)))))
   fstring)
 
 
 ;;  Register filter function
 (setq org-export-filter-final-output-functions
       '(ewo-filter-prepost))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; body filter : encapsulate body in a <div class="container">.
+
+(defun ewo-filter-body (fstring backend channel)
+  ;; (princ (format "body is \"%s\"\n" fstring))
+  (if (eq backend 'html)
+    (concat 
+     "<div class=\"container\">\n"
+     fstring
+     "</div> <!-- class container -->\n")
+    fstring))
+
+(setq org-export-filter-body-functions
+      '(ewo-filter-body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Header filter
@@ -371,7 +429,7 @@ class."
 		   "<div class=\"" ewo-bootstrap-column "\">\n"
 		   fstring
 		   "</div> <!-- bootstrap column -->\n"))
-    (setq ewo-boostrap-column nil))
+    (setq ewo-bootstrap-column nil))
   (when ewo-bootstrap-row-begin
     (setq fstring (concat 
 		   "<div class=\"row\">\n"
@@ -429,3 +487,8 @@ by the headline filter `ewo-filter-headline'."
 (setq org-export-filter-section-functions
       '())
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 
+;;; initialisation code
+
+(define-key org-mode-map (kbd "C-c C-=") 'ewo-publish)
