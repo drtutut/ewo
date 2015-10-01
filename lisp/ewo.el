@@ -47,10 +47,32 @@
 (require 'ox)
 (require 'ox-publish)
 
-(defvar ewo-name "EWO")
-(defvar ewo-root-dir "~/Documents/www/MonSite/org")
-(defvar ewo-publish-dir "~/public_html")
-(defvar ewo-categories
+
+;;; ----------------------------------------------------------------------------
+;;; Configuration variables.
+
+(defgroup ewo nil
+  "Easy Websites with org mode."
+  :tag "Ewo"
+  :group 'org)
+
+
+(defcustom ewo-name "EWO"
+  "The name of the website."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-root-dir "~/Documents/www/MonSite/org"
+  "The root of the org-source of the website."
+  :group 'ewo
+  :type 'directory)
+
+(defcustom ewo-publish-dir "~/public_html"
+  "The publishing directory."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-categories
   '(("teaching"
      :label "Teaching"
      :directory "Teaching"
@@ -60,10 +82,98 @@
      :label "Research"
      :directory "Research"
      :icon "eye-open"
-     :type static)))	       
+     :type static))
+  "Association list of the categories defining a website project.
+Each element of the alist is a category of the website. The CAR
+of each element is a string, uniquely identifying the
+category. The CDR of each element is a well formed property list
+with an even number of elements, alternating keys and values,
+specifying the parameters of the category.
 
-(defvar ewo-doc-extensions "pdf\\|doc\\|odt\\|ods\\|odp\\|odg\\|tar.gz\\|tgz\\|tar.bz2\\|zip"
-  "Allowed extensions for documents")
+  \(:property value :property value ... )
+
+The defined properties are :
+
+  `:label'
+
+  The label of the category as it will appear in the navigation
+  bar. This property is mandatory.
+
+  `:directory'
+
+  Directory containing the pages of the category. This property
+  is mandatory.
+
+  `:icon' 
+
+  the icon name, as it is named in the glyphicon list in the
+  bootstrap documentation. If the icon is named \"glyphicon
+  glyphicon-plus\", then just name it \"plus\". This property is
+  optional.
+
+  `:type'
+
+  The type of the category. For now there is just one type :
+  static. This property is mandatory."
+  :group 'ewo
+  :type '(alist 
+	  :key-type string  
+	  :value-type plist))
+
+(defcustom ewo-doc-extensions "pdf\\|doc\\|odt\\|ods\\|odp\\|odg\\|tar.gz\\|tgz\\|tar.bz2\\|zip"
+  "Regular expression describing allowed extensions for
+additional documents in a website."
+  :group 'ewo
+  :type 'regexp)
+
+(defcustom ewo-html-postamble 
+  "<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>js/bootstrap.min.js\"></script>"
+  "A string containing HTML code to be included in the postamble of a page."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
+<link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
+<link rel=\"stylesheet\" href=\"css/bootstrap.min.css\" type=\"text/css\"/>
+<link rel=\"stylesheet\" href=\"css/mystyle.css\" type=\"text/css\"/>
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+  <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
+  <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
+<![endif]-->
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
+  "A string containing the head of the home page. This code will be included in the
+<head></head> section."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-cat-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
+<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mytypo.css\" type=\"text/css\"/>
+<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/bootstrap.min.css\" type=\"text/css\"/>
+<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mystyle.css\" type=\"text/css\"/>
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+  <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
+  <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
+<![endif]-->
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
+  "A string containing the head of the pages contained in a category.  This code will
+be included in the <head></head> section."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-navbar-class "navbar navbar-inverse navbar-fixed-top"
+  "A string describing the class of the bootstrap navigation bar."
+  :group 'ewo
+  :type 'string)
+
+;;; ----------------------------------------------------------------------------
+;;; Internal functions
 
 (defun ewo-get-cat-prop (cat prop)
   "Gets the property of a category"
@@ -76,40 +186,10 @@
     (cons (car (car cats))
 	  (ewo-cat-names (cdr cats)))))
 
-;; entête de page de l'accueil
-(defvar ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
-<link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
-<link rel=\"stylesheet\" href=\"css/bootstrap.min.css\" type=\"text/css\"/>
-<link rel=\"stylesheet\" href=\"css/mystyle.css\" type=\"text/css\"/>
-<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-<!--[if lt IE 9]>
-  <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
-  <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
-<![endif]-->
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
-"entête de la page d'accueil")
-
-;; entête de page des catégories
-(defvar ewo-cat-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
-<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mytypo.css\" type=\"text/css\"/>
-<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/bootstrap.min.css\" type=\"text/css\"/>
-<link rel=\"stylesheet\" href=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>css/mystyle.css\" type=\"text/css\"/>
-<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-<!--[if lt IE 9]>
-  <script src=\"https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\"></script>
-  <script src=\"https://oss.maxcdn.com/respond/1.4.2/respond.min.js\"></script>
-<![endif]-->
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
-"entête des pages des catégories")
-
-;; Builds the navigation links to the categories. `catlist' is the
-;; list of categories, `catname' is the name of the current category,
-;; or `nil' if we are at site home. 
 (defun ewo-categories-nav (curcat catlist)
+  "Build the navigation links to the categories. CATLIST is the
+list of categories, CURCAT is the id of the current category, or
+`nil' if we are processing the home page."
   (if (not (consp catlist))
       '()
     (let ((catname 	(car (car catlist)))
@@ -134,12 +214,9 @@
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
-(defvar ewo-navbar-class "navbar navbar-inverse navbar-fixed-top")
-
-;; Builds the navigation)
-;; if `iscategory' is true, it means that we are in a category page,
-;; otherwise we are at the root of the website. `catname' is the category name
 (defun ewo-html-nav (catname)
+  "Builds the navigation. CATNAME is the name of the current
+category, or `nil' if we are processing the home page."
   (concat 
    "<header>
   <nav class=\"" ewo-navbar-class "\">
@@ -163,11 +240,6 @@
   </nav>
 </header>"))
 
-(defvar ewo-html-postamble 
-  "<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>js/bootstrap.min.js\"></script>")
-
-;; génère les propriétés de publication d'une catégorie
 (defun ewo-cat-props (cat)
 "Generates the publication properties for a category CAT."
   (let* ((name  (car cat))
@@ -192,8 +264,6 @@
      :html-postamble ewo-html-postamble)))
 
 
-
-;; génère la liste de publication du projet pour les catégories 
 (defun ewo-cat-project-alist (catlist)
   "Generates the publication association list for the different
 categories. This list respects the format of
@@ -206,11 +276,11 @@ CATLIST is the list of categories."
      (ewo-cat-props (car catlist))
      (ewo-cat-project-alist (cdr catlist)))))
 
-
 (defun ewo-gen-project-alist ()
-  "Progect alist regeneration. Must be called after any preamble content
-modification, e.g. if you tweak these parameters in your
-.emacs)."
+  "Project alist generation. Must be called after any preamble
+content modification, e.g. if you tweak these parameters in your
+.emacs. This is automatically performed by the publication
+function."
   (setq org-publish-project-alist
 	(append
 	 (list
@@ -275,8 +345,6 @@ modification, e.g. if you tweak these parameters in your
 				    '("orgfiles" "images" "css" "js" "fonts" "documents")
 				    (ewo-cat-names ewo-categories)))))))
 
-;; call project alist generation function immediately !
-(ewo-gen-project-alist)
 
 ;; main entry point ! 
 ;;;###autoload
@@ -286,7 +354,6 @@ modification, e.g. if you tweak these parameters in your
   (ewo-gen-project-alist)
   (org-publish "website"))
   
-
   
 (defun ewo-int-getlevel (cattree pos)
   "Gets the category level given a category tree."

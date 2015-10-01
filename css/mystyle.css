@@ -1,0 +1,25 @@
+/* put your custom CSS definitions here. */
+body {
+    font-size: 180%;
+}
+
+#content {
+    /* laisse de la place à la barre de nav */
+    margin-top: 70px;
+}
+
+pre.src {
+    background-color: black;
+    color: white;
+    font-size: 100%;
+}
+
+
+#postamble .container {
+    border-top: 1px solid #EEE;
+}
+
+#postamble .container img.logo {
+    max-width: 32px;
+    height: auto;
+}
