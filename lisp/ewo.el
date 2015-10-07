@@ -47,6 +47,7 @@
 (require 'ox)
 (require 'ox-publish)
 
+(setq lexical-binding t)
 
 ;;; ----------------------------------------------------------------------------
 ;;; Configuration variables.
@@ -176,11 +177,11 @@ be included in the <head></head> section."
 ;;; Internal functions
 
 (defun ewo-get-cat-prop (cat prop)
-  "Gets the property of a category"
+  "Get the property of a category"
   (plist-get (cdr (assoc cat ewo-categories)) prop)) 
 
 (defun ewo-cat-names (cats)
-  "Returns category names list out of categories alist"
+  "Return category names list out of categories alist"
   (if (not (consp cats))
       '()
     (cons (car (car cats))
@@ -209,13 +210,13 @@ list of categories, CURCAT is the id of the current category, or
        (ewo-categories-nav curcat (cdr catlist))))))
 
 (defun ewo-rootlink (level)
-  "Generates an up link to root depending on LEVEL"
+  "Generate an up link to root depending on LEVEL"
   (if (= level 0)
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
 (defun ewo-html-nav (catname)
-  "Builds the navigation. CATNAME is the name of the current
+  "Build the navigation. CATNAME is the name of the current
 category, or `nil' if we are processing the home page."
   (concat 
    "<header>
@@ -241,7 +242,7 @@ category, or `nil' if we are processing the home page."
 </header>"))
 
 (defun ewo-cat-props (cat)
-"Generates the publication properties for a category CAT."
+"Generate the publication properties for a category CAT."
   (let* ((name  (car cat))
 	 (props (cdr cat))
 	 (label (plist-get props :label))
@@ -265,7 +266,7 @@ category, or `nil' if we are processing the home page."
 
 
 (defun ewo-cat-project-alist (catlist)
-  "Generates the publication association list for the different
+  "Generate the publication association list for the different
 categories. This list respects the format of
 `org-publish-projetct-alist'.
 
@@ -277,10 +278,15 @@ CATLIST is the list of categories."
      (ewo-cat-project-alist (cdr catlist)))))
 
 (defun ewo-gen-project-alist ()
-  "Project alist generation. Must be called after any preamble
-content modification, e.g. if you tweak these parameters in your
+  "Project alist generation. Must be called after any modification of :
+
+- the page head content, or,
+- the postamble content, or,
+- the `ewo-categories' alist
+
+e.g. if you tweak these parameters in your
 .emacs. This is automatically performed by the publication
-function."
+function `ewo-publish'."
   (setq org-publish-project-alist
 	(append
 	 (list
@@ -356,7 +362,7 @@ function."
   
   
 (defun ewo-int-getlevel (cattree pos)
-  "Gets the category level given a category tree."
+  "Get the category level given a category tree."
   (if (string-match "/" cattree pos)
       (+ 1 (ewo-int-getlevel cattree (+ pos (match-end 0))))
     0))
@@ -375,12 +381,12 @@ function."
       nil)))
 	 
 (defvar ewo-template-funcs '(ewo-rootlink)
-  "safe functions usable in templates.")
+  "Safe functions usable in templates.")
 (defvar ewo-template-vars '(ewo:catlevel)
-  "variables usable in templates.")
+  "Variables usable in templates.")
 
 (defun ewo-secure-formp (form)
-  "Check if FORM is safe."
+  "Check if FORM is a safe formula."
   (let ((func (car form)))
     (when (memq func ewo-template-funcs)
       (ewo-secure-argsp (cdr form)))))
@@ -399,7 +405,7 @@ function."
   
 (defun ewo-filter-prepost (fstring backend channel)
   "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
-Only allowed functions with allowed args is possible, and args
+Only allowed functions with allowed args are possible, and args
 must be in a list of allowed variables."
   (when (eq backend 'html)
     ;; build the environment of the function calls (i.e. variables available to the user in templates
@@ -432,6 +438,9 @@ must be in a list of allowed variables."
 ;; body filter : encapsulate body in a <div class="container">.
 
 (defun ewo-filter-body (fstring backend channel)
+"Encapsulate the body of a page inside a <div
+class=\"container\">. This is a filter on the body of a document,
+i.e. the body of a page."
   ;; (princ (format "body is \"%s\"\n" fstring))
   (if (eq backend 'html)
     (concat 
@@ -448,13 +457,29 @@ must be in a list of allowed variables."
 
 ;;; TODO : Modularize this ! 
 (defun ewo-filter-headline (fstring backend channel)
-  "Surround h[2-5] headers with div class panel-header, and add class
-panel-body to de div class outline-text-[2-5]. Do this only if
-containing outline div is of class panel. 
+  "Headers and section processing:
 
-Second task is to surround sections with published
-BOOSTRAP_COLUMN property with a div with the corresponding
-class."
+- if containing outline div is of class panel : 
+  1. surround h[2-5] headers with div class panel-header,
+  2. add class panel-body to de div class outline-text-[2-5].
+  Warning ! This processing relies on the fact that the section has a
+  property HTML_CONTAINER_CLASS which value is the bootstrap panel
+  classes.
+
+- Surround sections with published BOOSTRAP_COLUMN property with
+  a <div> with the corresponding class (use bootstrap column
+  classes, like col-md-*, col-sm-* ...). 
+
+- Prefix sections with published BOOTSTRAP_ROW_BEGIN property
+  with a <div class=\"row\">.
+
+- Suffix sections with published BOOTSTRAP_ROW_END property
+  with a <div class=\"row\">.
+
+The processing of bootstrap row and columns suppose that property
+drawer filters are called before headline filters, as the ewo
+property drawer filter set flags indicating the presence of
+columns and row begin or end."
   (when (not (eq backend 'html)) fstring) 
   ;; (princ "*************************************************************************\n")
   ;; (princ (format "head : \"%s\"\n\n" fstring))
@@ -516,9 +541,13 @@ class."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; drawer filter
 
-(defvar ewo-bootstrap-column nil)
-(defvar ewo-bootstrap-row-begin nil)
-(defvar ewo-bootstrap-row-end nil)
+(defvar ewo-bootstrap-column nil
+"non nil indicates that current section should be embeded into a
+column.")
+(defvar ewo-bootstrap-row-begin nil
+"Non nil means that the current section shoud start a new row")
+(defvar ewo-bootstrap-row-end nil
+"Non nil means that the current section shoud end a new row")
 
 ;; careful : relies on the fact that this filter will be applied before
 ;; headline filter  (`ewo-filter-headline').
@@ -545,7 +574,7 @@ by the headline filter `ewo-filter-headline'."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; section filter
+;; section filter (unused)
 
 (defun ewo-filter-section (fstring backend channel)
   (when (not (eq backend 'html)) nil)
@@ -558,4 +587,3 @@ by the headline filter `ewo-filter-headline'."
 ;;; 
 ;;; initialisation code
 
-(define-key org-mode-map (kbd "C-c C-=") 'ewo-publish)
