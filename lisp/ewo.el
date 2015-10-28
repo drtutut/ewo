@@ -47,7 +47,9 @@
 (require 'ox)
 (require 'ox-publish)
 
-(setq lexical-binding t)
+;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
+;; <lisp></lisp> pour vraiment avoir du lexical binding.
+;; (setq lexical-binding t)
 
 ;;; ----------------------------------------------------------------------------
 ;;; Configuration variables.
@@ -134,6 +136,11 @@ additional documents in a website."
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-html-preamble nil
+  "A string containing HTML code to be included in the preamble of a page."
+  :group 'ewo
+  :type 'string)
+
 (defcustom ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
 <link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"css/bootstrap.min.css\" type=\"text/css\"/>
@@ -172,6 +179,70 @@ be included in the <head></head> section."
   "A string describing the class of the bootstrap navigation bar."
   :group 'ewo
   :type 'string)
+
+(defcustom ewo-ext-link-addition "ewoextlink"
+  "A string describing the class of external links. To activate
+this feature please consult the documentation of
+`ewo-ext-link-addition-type'."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-int-link-addition "ewointlink"
+  "A string describing the class of internal links. To activate
+this feature please consult the documentation of
+`ewo-int-link-addition-type'."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-ext-link-addition-type nil
+  "An atom describing the type of addtion performed on external
+links. The possible values are :
+
+`anchor' 
+
+The content of variable `ewo-ext-link-addition' is interpreted as
+a class attribute specification which is added to the external
+link `<a>' element.
+
+`span'
+
+The content of variable `ewo-ext-link-addition' is interpreted as
+a span class attribute specification. A `<span>' element is added
+at the end of the link with the specified class.
+
+`nil'
+
+No transformation is performed on external links.
+"
+  :group 'ewo
+  :type '(choice (const :tag "Anchor" anchor)
+		 (const :tag "Span" span)
+		 (const :tag "None" nil)))
+
+(defcustom ewo-int-link-addition-type nil
+  "An atom describing the type of addtion performed on internal
+links. The possible values are :
+
+`anchor' 
+
+The content of variable `ewo-int-link-addition' is interpreted as
+a class attribute specification which is added to the internal
+link `<a>' element.
+
+`span'
+
+The content of variable `ewo-int-link-addition' is interpreted as
+a span class attribute specification. A `<span>' element is added
+at the end of the internal link with the specified class.
+
+`nil'
+
+No transformation is performed on internal links.
+"
+  :group 'ewo
+  :type '(choice (const :tag "Anchor" 'anchor)
+		 (const :tag "Span" 'span)
+		 (const :tag "None" nil)))
 
 ;;; ----------------------------------------------------------------------------
 ;;; Internal functions
@@ -217,10 +288,12 @@ list of categories, CURCAT is the id of the current category, or
 
 (defun ewo-html-nav (catname)
   "Build the navigation. CATNAME is the name of the current
-category, or `nil' if we are processing the home page."
+category, or `nil' if we are processing the home page. Includes
+the preamble before if not `nil'."
   (concat 
-   "<header>
-  <nav class=\"" ewo-navbar-class "\">
+   "<header>\n"
+   (if ewo-html-preamble ewo-html-preamble "") "\n"
+"  <nav class=\"" ewo-navbar-class "\">
     <div class=\"container\">
       <div class=\"navbar-header\">
         <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
@@ -312,6 +385,7 @@ function `ewo-publish'."
 	   :base-directory (concat ewo-root-dir "/images")
 	   :base-extension "jpg\\|gif\\|png"
 	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :recursive t
 	   :publishing-directory (concat ewo-publish-dir "/images")
 	   :publishing-function 'org-publish-attachment)
 	  
@@ -335,8 +409,9 @@ function `ewo-publish'."
 	   "documents"
 	   :base-directory (concat ewo-root-dir "/documents")
 	   :base-extension ewo-doc-extensions
+	   :recursive t
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory (concat ewo-publish-dir "/js")
+	   :publishing-directory (concat ewo-publish-dir "/documents")
 	   :publishing-function 'org-publish-attachment)
 	  
 	  (list
@@ -582,6 +657,39 @@ by the headline filter `ewo-filter-headline'."
 
 (setq org-export-filter-section-functions
       '())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; link filter
+
+(defun ewo-filter-link (fstring backend channel)
+  (when (not (eq backend 'html)) nil)
+  (if (string-match "href=\"[a-z]+://" fstring)
+      ;; external link
+      (cond ((eq ewo-ext-link-addition-type 'anchor) 
+	     (when (and ewo-ext-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
+	       (setq fstring (concat "<a class=\"" 
+				     ewo-ext-link-addition "\" " 
+				     (match-string 1 fstring)))))
+	    ((eq ewo-ext-link-addition-type 'span) 
+	     (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
+	       (setq fstring (concat (match-string 1 fstring) 
+				     " <span class=\"" ewo-ext-link-addition "\"></span></a>")))))
+    ;; internal link
+    (cond ((eq ewo-int-link-addition-type 'anchor) 
+	   (when (and ewo-int-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
+	     (setq fstring (concat "<a class=\"" 
+				   ewo-int-link-addition "\" " 
+				   (match-string 1 fstring)))))
+	  ((eq ewo-int-link-addition-type 'span) 
+	   (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
+	     (setq fstring (concat (match-string 1 fstring) 
+				   " <span class=\"" ewo-int-link-addition "\"></span></a>"))))))
+  fstring)
+
+
+(setq org-export-filter-link-functions
+      '(ewo-filter-link))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 
