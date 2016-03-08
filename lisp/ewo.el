@@ -329,7 +329,8 @@ the preamble before if not `nil'."
      :publishing-function 'org-html-publish-to-html
      :recursive t
      :headline-levels 3
-     :style-include-default: nil
+     :style-include-default nil ; seems to be obsolete
+     :html-head-include-default-style nil ; use this now
      :section-numbers nil
      :table-of-contents nil
      :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
@@ -371,7 +372,8 @@ function `ewo-publish'."
 	   :publishing-directory ewo-publish-dir
 	   :publishing-function 'org-html-publish-to-html
 	   :headline-levels 3
-	   :style-include-default: nil
+	   :style-include-default nil ; seems to be obsolete
+	   :html-head-include-default-style nil ; use this now
 	   :section-numbers nil
 	   :table-of-contents nil
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
@@ -417,7 +419,7 @@ function `ewo-publish'."
 	  (list
 	   "fonts"
 	   :base-directory (concat ewo-root-dir "/fonts")
-	   :base-extension "woff2\\|woff\\|ttf\\|svg\\|eot"
+	   :base-extension "woff2\\|woff\\|ttf\\|svg\\|eot\\|otf\\|pfa"
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :publishing-directory (concat ewo-publish-dir "/fonts")
 	   :publishing-function 'org-publish-attachment)
@@ -432,8 +434,9 @@ function `ewo-publish'."
 (defun ewo-publish ()
   "Publish the currently defined website."
   (interactive)
-  (ewo-gen-project-alist)
-  (org-publish "website"))
+  (save-excursion
+    (ewo-gen-project-alist)
+    (org-publish "website")))
   
   
 (defun ewo-int-getlevel (cattree pos)
