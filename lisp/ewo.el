@@ -332,7 +332,8 @@ the preamble before if not `nil'."
      :style-include-default nil ; seems to be obsolete
      :html-head-include-default-style nil ; use this now
      :section-numbers nil
-     :table-of-contents nil
+     :table-of-contents nil ; seems to be obsolete
+     :with-toc t ; use this now
      :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
      :html-head ewo-cat-html-head
      :html-preamble (ewo-html-nav name)
@@ -375,7 +376,8 @@ function `ewo-publish'."
 	   :style-include-default nil ; seems to be obsolete
 	   :html-head-include-default-style nil ; use this now
 	   :section-numbers nil
-	   :table-of-contents nil
+	   :table-of-contents nil ; seems to be obsolete
+           :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	   :html-head ewo-html-head
 	   :html-preamble (ewo-html-nav nil)
