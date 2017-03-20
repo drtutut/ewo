@@ -141,6 +141,13 @@ additional documents in a website."
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-toc-in-navbar nil
+  "If set to nil, no table of content will be created. If set to
+`t', the table of content will be inserted as a dropdown menu in
+the navigation bar."
+  :group 'ewo
+  :type 'boolean)
+
 (defcustom ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
 <link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
 <link rel=\"stylesheet\" href=\"css/bootstrap.min.css\" type=\"text/css\"/>
@@ -286,13 +293,33 @@ list of categories, CURCAT is the id of the current category, or
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
-(defun ewo-html-nav (catname)
-  "Build the navigation. CATNAME is the name of the current
-category, or `nil' if we are processing the home page. Includes
+(defun ewo-toc (propl)
+  "Build the toc as a dropdown menu. PROPL is the list of publish
+properties. Note that the content is not generated now, because
+we do not have the data (the headings and their anchors). It will
+be inserted by the final output filter. The only information
+which is inserted in the generated <ul> element is the level of
+the toc (it will be read later on by the output filter)"
+  (let ((with-toc (plist-get propl :ewo-with-toc))
+        (level    (plist-get propl :headline-levels))
+    (if with-toc
+        (concat "        <li class=\"dropdown ewo-toc\">
+          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Table des matières <span class=\"caret\"></span></a>
+          <ul class=\"dropdown-menu\">"
+                level
+"</ul>
+        </li>"
+      "")))
+
+(defun ewo-html-nav (propl)
+  "Build the navigation. PROPL is the list of publishing properties. Includes
 the preamble before if not `nil'."
-  (concat 
-   "<header>\n"
-   (if ewo-html-preamble ewo-html-preamble "") "\n"
+  (let ((name (plist-get propl :ewo-cat-name))) ; get the name of the
+                                                ; category (nil if we
+                                                ; are on the homepage)
+    (concat 
+     "<header>\n"
+     (if ewo-html-preamble ewo-html-preamble "") "\n"
 "  <nav class=\"" ewo-navbar-class "\">
     <div class=\"container\">
       <div class=\"navbar-header\">
@@ -308,11 +335,12 @@ the preamble before if not `nil'."
         <ul class=\"nav navbar-nav\">
           <li" (if (not catname) " class=\"active\"" "") "><a href=\"" (if catname "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
 	  (ewo-categories-nav catname ewo-categories)
-"        </ul>
+          (ewo-toc propl)
+"       </ul>
       </div> <!-- navbar-collapse -->
     </div> <!-- container-fluid -->
   </nav>
-</header>"))
+</header>")))
 
 (defun ewo-cat-props (cat)
 "Generate the publication properties for a category CAT."
@@ -336,8 +364,10 @@ the preamble before if not `nil'."
      :with-toc t ; use this now
      :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
      :html-head ewo-cat-html-head
-     :html-preamble (ewo-html-nav name)
-     :html-postamble ewo-html-postamble)))
+     :html-preamble ewo-html-nav
+     :html-postamble ewo-html-postamble
+     :ewo-with-toc t ; generate toc in navbar
+     :ewo-cat-name name)))
 
 
 (defun ewo-cat-project-alist (catlist)
@@ -380,8 +410,9 @@ function `ewo-publish'."
            :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	   :html-head ewo-html-head
-	   :html-preamble (ewo-html-nav nil)
-	   :html-postamble ewo-html-postamble))
+	   :html-preamble ewo-html-nav
+	   :html-postamble ewo-html-postamble
+           :ewo-cat-name nil))
 	 (ewo-cat-project-alist ewo-categories)
 	 (list
 	  (list
@@ -478,6 +509,46 @@ function `ewo-publish'."
     (when (memq (car args) ewo-template-vars)
       (ewo-secure-argsp (cdr args)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; toc generation system
+
+(defun ewo-html--toc-text (toc-entries)
+  "Return content of a toc, as a string.  TOC-ENTRIES is an alist
+where key is an entry title, as a string, and value is its
+relative level, as an integer."
+  (let* ((prev-level (1- (cdar toc-entries)))
+	 (start-level prev-level))
+    (concat
+     (mapconcat
+      (lambda (entry)
+	(let ((headline (car entry))
+	      (level (cdr entry)))
+	  (concat
+	   (let* ((cnt (- level prev-level))
+		  (times (if (> cnt 0) (1- cnt) (- cnt))))
+	     (setq prev-level level)
+	     (concat
+	      (org-html--make-string
+	       times (cond ((> cnt 0) "\n<ul>\n<li>")
+			   ((< cnt 0) "</li>\n</ul>\n")))
+	      (if (> cnt 0) "\n<ul>\n<li>" "</li>\n<li>")))
+	   headline)))
+      toc-entries "")
+     (org-html--make-string (- prev-level start-level) "</li>\n</ul>\n"))))
+
+
+(defun ewo-html-toc (depth info)
+  "Build the toc with the specified DEPTH. INFO is a property
+list used as a communication channel."
+  (let ((toc-entries 
+         (mapcar (lambda (headline)
+                   (cons (org-html--format-toc-headline headline info)
+                         (org-headline-get-relative-level headline info)))
+                 (org-export-collect-headlines info depth))))
+    (when toc-entries
+      ;; à adapter à partir de la version org dans ox-html.el
+      (ewo-html--toc-text toc-entries))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter system : allows the execution of lisp formulae included in
 ;; <lisp></lisp> constructs.
@@ -508,6 +579,21 @@ must be in a list of allowed variables."
 	  (setq search-start end)))))
   fstring)
 
+(defun ewo-filter-build-toc (fstring backend channel)
+  "Build the table of content. Preamble generation has put a <li
+  class=\"dropdown ewo-toc\"><a...></a><ul
+  class=\"dropdown-menu>nnnn</ul></li> element. the `NNNN' number
+  is the level of toc generation."
+  (let ((search-start nil)
+        (re "^[[:space:]]*<li[[:space:]]+class=\"dropdown[[:space:]]+ewo-toc\">[[:space:]]*\n+[[:space:]]*<a.+</a>[[:space:]]*\n+[[:space:]]*<ul class=\"dropdown-menu\">\\([0-9]+\\)</ul>"))
+    (when (string-match re fstring)
+      (let* ((start-d (match-beginning 1))
+             (end-d   (match-end 1))
+             (level   (string-to-number (substring fstring start-d end-d))))
+        (concat 
+         (substring fstring 0 (- start-d 1)) 
+         (ewo-html-toc level channel)
+         (substring fstring (+ end-d 1))))))) 
 
 ;;  Register filter function
 (setq org-export-filter-final-output-functions
@@ -518,7 +604,7 @@ must be in a list of allowed variables."
 ;; body filter : encapsulate body in a <div class="container">.
 
 (defun ewo-filter-body (fstring backend channel)
-"Encapsulate the body of a page inside a <div
+  "Encapsulate the body of a page inside a <div
 class=\"container\">. This is a filter on the body of a document,
 i.e. the body of a page."
   ;; (princ (format "body is \"%s\"\n" fstring))
