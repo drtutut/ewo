@@ -806,3 +806,14 @@ by the headline filter `ewo-filter-headline'."
 ;;; 
 ;;; initialisation code
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; REWRITE
+;;; 
+;;; New code below 
+
+
+;; defines the backend
+(org-export-define-derived-backend 'ewo-html 'html
+  :translate-alist '((headline . ewo-html-headline-translator)
+                     (template . my-latex-template)))
