@@ -295,59 +295,12 @@ list of categories, CURCAT is the id of the current category, or
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
-;; The two stages generation is a real mess, or at least an horrible
-;; hack. It highlights the need for a cleaner mechanism, like an
-;; extension of the html-export backend.
-(defun ewo-toc (propl)
-  "Build the toc as a dropdown menu. PROPL is the list of publish
-properties. Note that only the container is generated here, not
-the content, because we do not have the data (the headings and
-their anchors). It will be inserted by the final output
-filter. The only information which is inserted in the generated
-<ul> element is the level of the toc (it will be read later on by
-the output filter)"
-  (let ((with-toc (plist-get propl :ewo-with-toc))
-        (level    (plist-get propl :headline-levels)))
-    (if with-toc
-        (concat "        <li class=\"dropdown ewo-toc\">
-          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Table des matières <span class=\"caret\"></span></a>
-          <ul class=\"dropdown-menu\">"
-                (number-to-string level)
-"</ul>
-        </li>")
-      "")))
-
-;; See comment before ewo-toc. 
+;; perhaps rename this, or remove. In the latter case, remove
+;; ewo-html-preamble, as it can directly be included as html-preamble.
 (defun ewo-html-nav (propl)
   "Build the navigation. PROPL is the list of publishing properties. Includes
 the preamble before if not `nil'."
-  (let ((name (plist-get propl :ewo-cat-name))) ; get the name of the
-                                                ; category (nil if we
-                                                ; are on the homepage)
-    (concat 
-     "<header>\n"
-     (if ewo-html-preamble ewo-html-preamble "") "\n"
-"  <nav class=\"" ewo-navbar-class "\">
-    <div class=\"container\">
-      <div class=\"navbar-header\">
-        <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
-          <span class=\"sr-only\">Toggle navigation</span>
-          <span class=\"icon-bar\"></span>
-          <span class=\"icon-bar\"></span>
-          <span class=\"icon-bar\"></span>
-        </button>
-        <a class=\"navbar-brand\" href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\">" ewo-name "</a>
-      </div>
-      <div id=\"navbar\" class=\"navbar-collapse collapse\">
-        <ul class=\"nav navbar-nav\">
-          <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
-	  (ewo-categories-nav name ewo-categories)
-          (ewo-toc propl)
-"       </ul>
-      </div> <!-- navbar-collapse -->
-    </div> <!-- container-fluid -->
-  </nav>
-</header>")))
+  (concat (if ewo-html-preamble ewo-html-preamble "") "\n"))
 
 (defun ewo-cat-props (cat)
 "Generate the publication properties for a category CAT."
@@ -361,7 +314,7 @@ the preamble before if not `nil'."
      :base-extension "org"
      :exclude "^\\(.*~\\|^.#.*\\)$"
      :publishing-directory (concat ewo-publish-dir "/" dir)
-     :publishing-function 'org-html-publish-to-html
+     :publishing-function 'ewo-html-publish-to-html
      :recursive t
      :headline-levels 3
      :style-include-default nil ; seems to be obsolete
@@ -408,7 +361,7 @@ function `ewo-publish'."
 	   :base-extension "org"
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :publishing-directory ewo-publish-dir
-	   :publishing-function 'org-html-publish-to-html
+	   :publishing-function 'ewo-html-publish-to-html
 	   :headline-levels 3
 	   :style-include-default nil ; seems to be obsolete
 	   :html-head-include-default-style nil ; use this now
@@ -616,8 +569,8 @@ must be in a list of allowed variables."
 ;;  Register filter functions
 (setq org-export-filter-final-output-functions
       '(ewo-filter-prepost))
-(add-to-list 'org-export-filter-final-output-functions
-      'ewo-filter-build-toc)
+;; (add-to-list 'org-export-filter-final-output-functions
+;;       'ewo-filter-build-toc)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -812,8 +765,126 @@ by the headline filter `ewo-filter-headline'."
 ;;; 
 ;;; New code below 
 
+(defun ewo-html--toc-text (toc-entries)
+  "Return content of a toc, as a string.  TOC-ENTRIES is an alist
+where key is an entry title, as a string, and value is its
+relative level, as an integer."
+  (let* ((prev-level (1- (cdar toc-entries)))
+	 (start-level prev-level))
+    (concat
+     (mapconcat
+      (lambda (entry)
+	(let ((headline (car entry))
+	      (level (cdr entry)))
+	  (concat
+	   (let* ((cnt (- level prev-level))
+		  (times (if (> cnt 0) (1- cnt) (- cnt))))
+	     (setq prev-level level)
+	     (concat
+	      (org-html--make-string
+	       times (cond ((> cnt 0) "\n<ul>\n<li>")
+			   ((< cnt 0) "</li>\n</ul>\n")))
+	      (if (> cnt 0) "\n<ul>\n<li>" "</li>\n<li>")))
+	   headline)))
+      toc-entries "")
+     (org-html--make-string (- prev-level start-level) "</li>\n</ul>\n"))))
 
-;; defines the backend
+(defun ewo-toc-content (depth info)
+  "Format the innards of the toc. DEPTH is the depth of headers
+to include in the toc, info is an alist ised as a communication
+channel."
+  (let ((toc-entries 
+         (mapcar (lambda (headline)
+                   (cons (org-html--format-toc-headline headline info)
+                         (org-export-get-relative-level headline info)))
+                 (org-export-collect-headlines info depth))))
+    (when toc-entries
+      ;; à adapter à partir de la version org dans ox-html.el
+      (ewo-html--toc-text toc-entries))))
+
+(defun ewo-html-toc (depth info)
+  "Build the toc. DEPTH is the depth of headers to include in the
+toc, info is an alist ised as a communication channel."
+  (concat "        <li class=\"dropdown ewo-toc\">
+          <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Table des matières <span class=\"caret\"></span></a>
+          <ul class=\"dropdown-menu\">"
+          (ewo-toc-content depth info)
+"</ul>
+        </li>")
+)
+
+
+(defun ewo-html-navbar (info)
+  "Build the navigation bar, and optionnally the toc. INFO is a
+plist used as a communication channel."
+  (let ((name (plist-get info :ewo-cat-name))) ; get the name of the
+                                                ; category (nil if we
+                                                ; are on the homepage)
+    (concat 
+     "<header>\n"
+"  <nav class=\"" ewo-navbar-class "\">
+    <div class=\"container\">
+      <div class=\"navbar-header\">
+        <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
+          <span class=\"sr-only\">Toggle navigation</span>
+          <span class=\"icon-bar\"></span>
+          <span class=\"icon-bar\"></span>
+          <span class=\"icon-bar\"></span>
+        </button>
+        <a class=\"navbar-brand\" href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\">" ewo-name "</a>
+      </div>
+      <div id=\"navbar\" class=\"navbar-collapse collapse\">
+        <ul class=\"nav navbar-nav\">
+          <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
+	  (ewo-categories-nav name ewo-categories)
+          (let ((depth (plist-get info :with-toc)))
+            (when depth (ewo-html-toc depth info)))
+"       </ul>
+      </div> <!-- navbar-collapse -->
+    </div> <!-- container-fluid -->
+  </nav>
+</header>")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Main translation funtions  
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ewo-html-inner-template (contents info)
+  "Return body of document string after HTML conversion.
+CONTENTS is the transcoded contents string.  INFO is a plist used
+as a communication channel."
+  (concat
+   (ewo-html-navbar info)
+   ;; Table of contents. ### TODO: à déplacer dans ewo-html-navbar
+   ;; Document contents.
+   contents
+   ;; Footnotes section.
+   (org-html-footnote-section info)))
+
+
+;; defines the backend.
+;;
+;; From now on, navigation bar is generated by the inner-template
+;; generator, not by the preamble. The preamble will be totally deactivated.
+
 (org-export-define-derived-backend 'ewo-html 'html
-  :translate-alist '((headline . ewo-html-headline-translator)
-                     (template . my-latex-template)))
+  :translate-alist '(;(headline . ewo-html-headline-translator)
+                     (inner-template . ewo-html-inner-template)))
+
+;;;###autoload
+(defun ewo-html-publish-to-html (plist filename pub-dir)
+  "Publish an org file to HTML using ewo backend.
+
+FILENAME is the filename of the Org file to be published.  PLIST
+is the property list for the given project.  PUB-DIR is the
+publishing directory.
+
+Return output file name."
+  (princ "ewo-html publishing started\n")
+  (org-publish-org-to 'ewo-html filename
+		      (concat "." (or (plist-get plist :html-extension)
+				      org-html-extension
+				      "html"))
+		      plist pub-dir))
