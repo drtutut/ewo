@@ -45,6 +45,7 @@
 (provide 'ewo)
 (require 'org)
 (require 'ox)
+(require 'ox-html)
 (require 'ox-publish)
 
 ;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
@@ -269,6 +270,7 @@ No transformation is performed on internal links.
   "Build the navigation links to the categories. CATLIST is the
 list of categories, CURCAT is the id of the current category, or
 `nil' if we are processing the home page."
+  (princ "--- build navigation links for categories\n")
   (if (not (consp catlist))
       '()
     (let ((catname 	(car (car catlist)))
@@ -293,24 +295,29 @@ list of categories, CURCAT is the id of the current category, or
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
+;; The two stages generation is a real mess, or at least an horrible
+;; hack. It highlights the need for a cleaner mechanism, like an
+;; extension of the html-export backend.
 (defun ewo-toc (propl)
   "Build the toc as a dropdown menu. PROPL is the list of publish
-properties. Note that the content is not generated now, because
-we do not have the data (the headings and their anchors). It will
-be inserted by the final output filter. The only information
-which is inserted in the generated <ul> element is the level of
-the toc (it will be read later on by the output filter)"
+properties. Note that only the container is generated here, not
+the content, because we do not have the data (the headings and
+their anchors). It will be inserted by the final output
+filter. The only information which is inserted in the generated
+<ul> element is the level of the toc (it will be read later on by
+the output filter)"
   (let ((with-toc (plist-get propl :ewo-with-toc))
-        (level    (plist-get propl :headline-levels))
+        (level    (plist-get propl :headline-levels)))
     (if with-toc
         (concat "        <li class=\"dropdown ewo-toc\">
           <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Table des matières <span class=\"caret\"></span></a>
           <ul class=\"dropdown-menu\">"
-                level
+                (number-to-string level)
 "</ul>
-        </li>"
+        </li>")
       "")))
 
+;; See comment before ewo-toc. 
 (defun ewo-html-nav (propl)
   "Build the navigation. PROPL is the list of publishing properties. Includes
 the preamble before if not `nil'."
@@ -329,12 +336,12 @@ the preamble before if not `nil'."
           <span class=\"icon-bar\"></span>
           <span class=\"icon-bar\"></span>
         </button>
-        <a class=\"navbar-brand\" href=\"" (if catname "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\">" ewo-name "</a>
+        <a class=\"navbar-brand\" href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\">" ewo-name "</a>
       </div>
       <div id=\"navbar\" class=\"navbar-collapse collapse\">
         <ul class=\"nav navbar-nav\">
-          <li" (if (not catname) " class=\"active\"" "") "><a href=\"" (if catname "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
-	  (ewo-categories-nav catname ewo-categories)
+          <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
+	  (ewo-categories-nav name ewo-categories)
           (ewo-toc propl)
 "       </ul>
       </div> <!-- navbar-collapse -->
@@ -364,7 +371,7 @@ the preamble before if not `nil'."
      :with-toc t ; use this now
      :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
      :html-head ewo-cat-html-head
-     :html-preamble ewo-html-nav
+     :html-preamble 'ewo-html-nav
      :html-postamble ewo-html-postamble
      :ewo-with-toc t ; generate toc in navbar
      :ewo-cat-name name)))
@@ -410,7 +417,7 @@ function `ewo-publish'."
            :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	   :html-head ewo-html-head
-	   :html-preamble ewo-html-nav
+	   :html-preamble 'ewo-html-nav
 	   :html-postamble ewo-html-postamble
            :ewo-cat-name nil))
 	 (ewo-cat-project-alist ewo-categories)
@@ -511,6 +518,10 @@ function `ewo-publish'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; toc generation system
+;;
+;; The two stages generation is a real mess, or at least an horrible
+;; hack. It highlights the need for a cleaner mechanism, like an
+;; extension of the html-export backend.
 
 (defun ewo-html--toc-text (toc-entries)
   "Return content of a toc, as a string.  TOC-ENTRIES is an alist
@@ -543,7 +554,7 @@ list used as a communication channel."
   (let ((toc-entries 
          (mapcar (lambda (headline)
                    (cons (org-html--format-toc-headline headline info)
-                         (org-headline-get-relative-level headline info)))
+                         (org-export-get-relative-level headline info)))
                  (org-export-collect-headlines info depth))))
     (when toc-entries
       ;; à adapter à partir de la version org dans ox-html.el
@@ -552,7 +563,6 @@ list used as a communication channel."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter system : allows the execution of lisp formulae included in
 ;; <lisp></lisp> constructs.
-
   
 (defun ewo-filter-prepost (fstring backend channel)
   "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
@@ -579,6 +589,14 @@ must be in a list of allowed variables."
 	  (setq search-start end)))))
   fstring)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; toc generation filter
+;;
+;; The two stages generation is a real mess, or at least an horrible
+;; hack. It highlights the need for a cleaner mechanism, like an
+;; extension of the html-export backend.
+
 (defun ewo-filter-build-toc (fstring backend channel)
   "Build the table of content. Preamble generation has put a <li
   class=\"dropdown ewo-toc\"><a...></a><ul
@@ -593,11 +611,13 @@ must be in a list of allowed variables."
         (concat 
          (substring fstring 0 (- start-d 1)) 
          (ewo-html-toc level channel)
-         (substring fstring (+ end-d 1))))))) 
+         (substring fstring end-d)))))) 
 
-;;  Register filter function
+;;  Register filter functions
 (setq org-export-filter-final-output-functions
       '(ewo-filter-prepost))
+(add-to-list 'org-export-filter-final-output-functions
+      'ewo-filter-build-toc)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
