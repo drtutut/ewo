@@ -51,8 +51,11 @@
 ;; <lisp></lisp> pour vraiment avoir du lexical binding.
 ;; (setq lexical-binding t)
 
-;;; ----------------------------------------------------------------------------
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
 ;;; Configuration variables.
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup ewo nil
   "Easy Websites with org mode."
@@ -140,13 +143,6 @@ additional documents in a website."
   "A string containing HTML code to be included in the preamble of a page."
   :group 'ewo
   :type 'string)
-
-(defcustom ewo-toc-in-navbar nil
-  "If set to nil, no table of content will be created. If set to
-`t', the table of content will be inserted as a dropdown menu in
-the navigation bar."
-  :group 'ewo
-  :type 'boolean)
 
 (defcustom ewo-html-head "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>
 <link rel=\"stylesheet\" href=\"css/mytypo.css\" type=\"text/css\"/>
@@ -251,8 +247,11 @@ No transformation is performed on internal links.
 		 (const :tag "Span" 'span)
 		 (const :tag "None" nil)))
 
-;;; ----------------------------------------------------------------------------
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
 ;;; Internal functions
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun ewo-get-cat-prop (cat prop)
   "Get the property of a category"
@@ -421,16 +420,6 @@ function `ewo-publish'."
 				    (ewo-cat-names ewo-categories)))))))
 
 
-;; main entry point ! 
-;;;###autoload
-(defun ewo-publish ()
-  "Publish the currently defined website."
-  (interactive)
-  (save-excursion
-    (ewo-gen-project-alist)
-    (org-publish "website")))
-  
-  
 (defun ewo-int-getlevel (cattree pos)
   "Get the category level given a category tree."
   (if (string-match "/" cattree pos)
@@ -512,265 +501,6 @@ list used as a communication channel."
       ;; à adapter à partir de la version org dans ox-html.el
       (ewo-html--toc-text toc-entries))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; filter system : allows the execution of lisp formulae included in
-;; <lisp></lisp> constructs.
-  
-(defun ewo-filter-prepost (fstring backend channel)
-  "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
-Only allowed functions with allowed args are possible, and args
-must be in a list of allowed variables."
-  (when (eq backend 'ewo)
-    ;; build the environment of the function calls (i.e. variables available to the user in templates
-    (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
-    (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
-	  (search-start nil))
-      (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
-	(let* ((start (match-beginning 1))
-	       (end   (match-end 1))
-	       (strform (substring fstring start end))
-	       (form (read strform)))
-	  (princ (format "===== lisp exp is \"%s\"\n" strform))
-	  (if (ewo-secure-formp form)
-	      (let ((result (eval form)))
-		(setq fstring (concat
-			       (substring fstring 0 (- start 6)) ; jq avant <lisp>
-			       result
-			       (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
-	    (error "unsecure or malformed expression : %s" strform))
-	  (setq search-start end)))))
-  fstring)
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; toc generation filter
-;;
-;; The two stages generation is a real mess, or at least an horrible
-;; hack. It highlights the need for a cleaner mechanism, like an
-;; extension of the html-export backend.
-
-;; (defun ewo-filter-build-toc (fstring backend channel)
-;;   "Build the table of content. Preamble generation has put a <li
-;;   class=\"dropdown ewo-toc\"><a...></a><ul
-;;   class=\"dropdown-menu>nnnn</ul></li> element. the `NNNN' number
-;;   is the level of toc generation."
-;;   (let ((search-start nil)
-;;         (re "^[[:space:]]*<li[[:space:]]+class=\"dropdown[[:space:]]+ewo-toc\">[[:space:]]*\n+[[:space:]]*<a.+</a>[[:space:]]*\n+[[:space:]]*<ul class=\"dropdown-menu\">\\([0-9]+\\)</ul>"))
-;;     (when (string-match re fstring)
-;;       (let* ((start-d (match-beginning 1))
-;;              (end-d   (match-end 1))
-;;              (level   (string-to-number (substring fstring start-d end-d))))
-;;         (concat 
-;;          (substring fstring 0 (- start-d 1)) 
-;;          (ewo-html-toc level channel)
-;;          (substring fstring end-d)))))) 
-
-;; installation performed directly during backend declaration.
-;;  Register filter functions
-;; (setq org-export-filter-final-output-functions
-;;       '(ewo-filter-prepost))
-;; (add-to-list 'org-export-filter-final-output-functions
-;;       'ewo-filter-build-toc)
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; body filter : encapsulate body in a <div class="container">.
-
-;; not needed anymore : performed directly by template translation
-;; function.
-
-;; (defun ewo-filter-body (fstring backend channel)
-;;   "Encapsulate the body of a page inside a <div
-;; class=\"container\">. This is a filter on the body of a document,
-;; i.e. the body of a page."
-;;   ;; (princ (format "body is \"%s\"\n" fstring))
-;;   (if (eq backend 'html)
-;;     (concat 
-;;      "<div class=\"container\">\n"
-;;      fstring
-;;      "</div> <!-- class container -->\n")
-;;     fstring))
-
-;; (setq org-export-filter-body-functions
-;;       '(ewo-filter-body))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Header filter
-
-;;; TODO : Modularize this ! 
-(defun ewo-filter-headline (fstring backend channel)
-  "Headers and section processing:
-
-- if containing outline div is of class panel : 
-  1. surround h[2-5] headers with div class panel-header,
-  2. add class panel-body to de div class outline-text-[2-5].
-  Warning ! This processing relies on the fact that the section has a
-  property HTML_CONTAINER_CLASS which value is the bootstrap panel
-  classes.
-
-- Surround sections with published BOOSTRAP_COLUMN property with
-  a <div> with the corresponding class (use bootstrap column
-  classes, like col-md-*, col-sm-* ...). 
-
-- Prefix sections with published BOOTSTRAP_ROW_BEGIN property
-  with a <div class=\"row\">.
-
-- Suffix sections with published BOOTSTRAP_ROW_END property
-  with a <div class=\"row\">.
-
-The processing of bootstrap row and columns suppose that property
-drawer filters are called before headline filters, as the ewo
-property drawer filter set flags indicating the presence of
-columns and row begin or end."
-  (when (not (eq backend 'html)) fstring) 
-  ;; (princ "*************************************************************************\n")
-  ;; (princ (format "head : \"%s\"\n\n" fstring))
-  ;; (princ (format "channel : %s\n\n" channel))
-  (let ((re "^\\(<div.+class=\"outline-[2-5].+panel.+\">[[:space:]]*\n\\)\\(<h[2-5].+>.+</h[2-5]>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
-    (when (string-match re fstring)
-      (let ((start-outline-2 (match-beginning 1))
-	    (end-outline-2 (match-end 1))
-	    (start-h2 (match-beginning 2))
-	    (end-h2 (match-end 2))
-	    (start-div-body (match-beginning 3))
-	    (end-div-body (match-end 3))
-	    (start-tail (match-beginning 5))
-	    (end-tail (match-end 5)))
-	(setq fstring (concat
-		       (substring fstring start-outline-2 end-outline-2)
-		       "<div class=\"panel-heading\">\n"
-		       (let ((h2 (substring fstring start-h2 end-h2)))
-			 (if (string-match "^\\(.+class=\".+\\)\\(\".+\\)$" h2)
-			     (let ((pre (match-string 1 h2))
-				   (post (match-string 2 h2)))
-			       (concat pre " panel-title" post))
-			   (if (string-match "^\\(<h[2-5].+\\)\\(>.+$\\)" h2) ; should match
-			       (let ((pre (match-string 1 h2))
-				     (post (match-string 2 h2)))
-				 (concat pre " class=\"panel-title\"" post))
-			     (substring fstring start-h2 end-h2))))
-		       "</div>\n"
-		       "<div class=\"panel-body\">\n"
-		       (substring fstring start-div-body end-div-body)
-		       "\n</div>\n"
-		       (substring fstring start-tail nil))))))
-  ;; now check if properties regarding bootstrap rows and columns have
-  ;; been set. Add divs accordingly. This is soooo weird (because it
-  ;; relies on filter application order)....
-
-  (when ewo-bootstrap-column
-    (setq fstring (concat
-		   "<div class=\"" ewo-bootstrap-column "\">\n"
-		   fstring
-		   "</div> <!-- bootstrap column -->\n"))
-    (setq ewo-bootstrap-column nil))
-  (when ewo-bootstrap-row-begin
-    (setq fstring (concat 
-		   "<div class=\"row\">\n"
-		   fstring))
-    (setq ewo-bootstrap-row-begin nil))
-  (when ewo-bootstrap-row-end
-    (setq fstring (concat 
-		   fstring
-		   "</div>\n"))
-    (setq ewo-bootstrap-row-end nil))
-  
-  fstring)
-
-;; installation performed directly during backend declaration.
-;; (setq org-export-filter-headline-functions 
-;;       '(ewo-filter-headline))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; drawer filter
-
-(defvar ewo-bootstrap-column nil
-"non nil indicates that current section should be embeded into a
-column.")
-(defvar ewo-bootstrap-row-begin nil
-"Non nil means that the current section shoud start a new row")
-(defvar ewo-bootstrap-row-end nil
-"Non nil means that the current section shoud end a new row")
-
-;; careful : relies on the fact that this filter will be applied before
-;; headline filter  (`ewo-filter-headline').
-(defun ewo-filter-drawer (fstring backend channel)
-  "Extract information from BOOTSTRAP_COLUMN, BOOTSTRAP_ROW_BEGIN
-and BOOTSTRAP_ROW_END properties. This information will be used
-by the headline filter `ewo-filter-headline'."
-  (when (not (eq backend 'html)) nil)
-  ;; (princ (format "drawer : \"%s\"\n" fstring))
-  (when (string-match "^BOOTSTRAP_COLUMN:[[:space:]]+\\(.+\\)[[:space:]]*$" fstring)
-    ;; (princ "COLUMN OK !!!!!!!!!!!!!!!!!\n")
-    (setq ewo-bootstrap-column (match-string 1 fstring)))
-  (when (string-match "^BOOTSTRAP_ROW_BEGIN:[[:space:]]+.+[[:space:]]*$" fstring)
-    ;; (princ "ROW BEGIN OK !!!!!!!!!!!!!!!!!\n")
-    (setq ewo-bootstrap-row-begin t))
-  (when (string-match "^BOOTSTRAP_ROW_END:[[:space:]]+.+[[:space:]]*$" fstring)
-    ;; (princ "ROW END OK !!!!!!!!!!!!!!!!!\n")
-    (setq ewo-bootstrap-row-end t))
-  ;; return a newline because filter system doesn't like empty strings
-  "\n")
-
-;; installation performed directly during backend declaration.
-;; (setq org-export-filter-property-drawer-functions
-;;       '(ewo-filter-drawer))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; section filter (unused)
-
-(defun ewo-filter-section (fstring backend channel)
-  (when (not (eq backend 'html)) nil)
-  (princ (format "section : \"%s\"\n" fstring)))
-
-;; (setq org-export-filter-section-functions
-;;       '())
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; link filter
-
-(defun ewo-filter-link (fstring backend channel)
-  (when (not (eq backend 'html)) nil)
-  (if (string-match "href=\"[a-z]+://" fstring)
-      ;; external link
-      (cond ((eq ewo-ext-link-addition-type 'anchor) 
-	     (when (and ewo-ext-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
-	       (setq fstring (concat "<a class=\"" 
-				     ewo-ext-link-addition "\" " 
-				     (match-string 1 fstring)))))
-	    ((eq ewo-ext-link-addition-type 'span) 
-	     (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
-	       (setq fstring (concat (match-string 1 fstring) 
-				     " <span class=\"" ewo-ext-link-addition "\"></span></a>")))))
-    ;; internal link
-    (cond ((eq ewo-int-link-addition-type 'anchor) 
-	   (when (and ewo-int-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
-	     (setq fstring (concat "<a class=\"" 
-				   ewo-int-link-addition "\" " 
-				   (match-string 1 fstring)))))
-	  ((eq ewo-int-link-addition-type 'span) 
-	   (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
-	     (setq fstring (concat (match-string 1 fstring) 
-				   " <span class=\"" ewo-int-link-addition "\"></span></a>"))))))
-  fstring)
-
-
-;; installation performed directly during backend declaration.
-;; (setq org-export-filter-link-functions
-;;       '(ewo-filter-link))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; 
-;;; initialisation code
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; REWRITE
-;;; 
-;;; New code below 
-
 (defun ewo-html--toc-text (toc-entries)
   "Return content of a toc, as a string.  TOC-ENTRIES is an alist
 where key is an entry title, as a string, and value is its
@@ -850,6 +580,179 @@ plist used as a communication channel."
     </div> <!-- container-fluid -->
   </nav>
 </header>")))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; filter system : allows the execution of lisp formulae included in
+;; <lisp></lisp> constructs.
+  
+(defun ewo-filter-prepost (fstring backend channel)
+  "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
+Only allowed functions with allowed args are possible, and args
+must be in a list of allowed variables."
+  (when (eq backend 'ewo)
+    ;; build the environment of the function calls (i.e. variables available to the user in templates
+    (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
+    (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
+	  (search-start nil))
+      (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
+	(let* ((start (match-beginning 1))
+	       (end   (match-end 1))
+	       (strform (substring fstring start end))
+	       (form (read strform)))
+	  (princ (format "===== lisp exp is \"%s\"\n" strform))
+	  (if (ewo-secure-formp form)
+	      (let ((result (eval form)))
+		(setq fstring (concat
+			       (substring fstring 0 (- start 6)) ; jq avant <lisp>
+			       result
+			       (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
+	    (error "unsecure or malformed expression : %s" strform))
+	  (setq search-start end)))))
+  fstring)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Header filter
+
+;;; TODO : Modularize this ! Perhaps transform into as a translation function  
+(defun ewo-filter-headline (fstring backend channel)
+  "Headers and section processing:
+
+- if containing outline div is of class panel : 
+  1. surround h[2-5] headers with div class panel-header,
+  2. add class panel-body to de div class outline-text-[2-5].
+  Warning ! This processing relies on the fact that the section has a
+  property HTML_CONTAINER_CLASS which value is the bootstrap panel
+  classes.
+
+- Surround sections with published BOOSTRAP_COLUMN property with
+  a <div> with the corresponding class (use bootstrap column
+  classes, like col-md-*, col-sm-* ...). 
+
+- Prefix sections with published BOOTSTRAP_ROW_BEGIN property
+  with a <div class=\"row\">.
+
+- Suffix sections with published BOOTSTRAP_ROW_END property
+  with a <div class=\"row\">.
+
+The processing of bootstrap row and columns suppose that property
+drawer filters are called before headline filters, as the ewo
+property drawer filter set flags indicating the presence of
+columns and row begin or end."
+  (when (not (eq backend 'html)) fstring) 
+  ;; (princ "*************************************************************************\n")
+  ;; (princ (format "head : \"%s\"\n\n" fstring))
+  ;; (princ (format "channel : %s\n\n" channel))
+  (let ((re "^\\(<div.+class=\"outline-[2-5].+panel.+\">[[:space:]]*\n\\)\\(<h[2-5].+>.+</h[2-5]>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
+    (when (string-match re fstring)
+      (let ((start-outline-2 (match-beginning 1))
+	    (end-outline-2 (match-end 1))
+	    (start-h2 (match-beginning 2))
+	    (end-h2 (match-end 2))
+	    (start-div-body (match-beginning 3))
+	    (end-div-body (match-end 3))
+	    (start-tail (match-beginning 5))
+	    (end-tail (match-end 5)))
+	(setq fstring (concat
+		       (substring fstring start-outline-2 end-outline-2)
+		       "<div class=\"panel-heading\">\n"
+		       (let ((h2 (substring fstring start-h2 end-h2)))
+			 (if (string-match "^\\(.+class=\".+\\)\\(\".+\\)$" h2)
+			     (let ((pre (match-string 1 h2))
+				   (post (match-string 2 h2)))
+			       (concat pre " panel-title" post))
+			   (if (string-match "^\\(<h[2-5].+\\)\\(>.+$\\)" h2) ; should match
+			       (let ((pre (match-string 1 h2))
+				     (post (match-string 2 h2)))
+				 (concat pre " class=\"panel-title\"" post))
+			     (substring fstring start-h2 end-h2))))
+		       "</div>\n"
+		       "<div class=\"panel-body\">\n"
+		       (substring fstring start-div-body end-div-body)
+		       "\n</div>\n"
+		       (substring fstring start-tail nil))))))
+  ;; now check if properties regarding bootstrap rows and columns have
+  ;; been set. Add divs accordingly. This is soooo weird (because it
+  ;; relies on filter application order)....
+
+  (when ewo-bootstrap-column
+    (setq fstring (concat
+		   "<div class=\"" ewo-bootstrap-column "\">\n"
+		   fstring
+		   "</div> <!-- bootstrap column -->\n"))
+    (setq ewo-bootstrap-column nil))
+  (when ewo-bootstrap-row-begin
+    (setq fstring (concat 
+		   "<div class=\"row\">\n"
+		   fstring))
+    (setq ewo-bootstrap-row-begin nil))
+  (when ewo-bootstrap-row-end
+    (setq fstring (concat 
+		   fstring
+		   "</div>\n"))
+    (setq ewo-bootstrap-row-end nil))
+  
+  fstring)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; drawer filter
+
+(defvar ewo-bootstrap-column nil
+"non nil indicates that current section should be embeded into a
+column.")
+(defvar ewo-bootstrap-row-begin nil
+"Non nil means that the current section shoud start a new row")
+(defvar ewo-bootstrap-row-end nil
+"Non nil means that the current section shoud end a new row")
+
+;; careful : relies on the fact that this filter will be applied before
+;; headline filter  (`ewo-filter-headline').
+(defun ewo-filter-drawer (fstring backend channel)
+  "Extract information from BOOTSTRAP_COLUMN, BOOTSTRAP_ROW_BEGIN
+and BOOTSTRAP_ROW_END properties. This information will be used
+by the headline filter `ewo-filter-headline'."
+  (when (not (eq backend 'html)) nil)
+  ;; (princ (format "drawer : \"%s\"\n" fstring))
+  (when (string-match "^BOOTSTRAP_COLUMN:[[:space:]]+\\(.+\\)[[:space:]]*$" fstring)
+    ;; (princ "COLUMN OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-column (match-string 1 fstring)))
+  (when (string-match "^BOOTSTRAP_ROW_BEGIN:[[:space:]]+.+[[:space:]]*$" fstring)
+    ;; (princ "ROW BEGIN OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-row-begin t))
+  (when (string-match "^BOOTSTRAP_ROW_END:[[:space:]]+.+[[:space:]]*$" fstring)
+    ;; (princ "ROW END OK !!!!!!!!!!!!!!!!!\n")
+    (setq ewo-bootstrap-row-end t))
+  ;; return a newline because filter system doesn't like empty strings
+  "\n")
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; link filter
+
+(defun ewo-filter-link (fstring backend channel)
+  (when (not (eq backend 'html)) nil)
+  (if (string-match "href=\"[a-z]+://" fstring)
+      ;; external link
+      (cond ((eq ewo-ext-link-addition-type 'anchor) 
+	     (when (and ewo-ext-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
+	       (setq fstring (concat "<a class=\"" 
+				     ewo-ext-link-addition "\" " 
+				     (match-string 1 fstring)))))
+	    ((eq ewo-ext-link-addition-type 'span) 
+	     (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
+	       (setq fstring (concat (match-string 1 fstring) 
+				     " <span class=\"" ewo-ext-link-addition "\"></span></a>")))))
+    ;; internal link
+    (cond ((eq ewo-int-link-addition-type 'anchor) 
+	   (when (and ewo-int-link-addition (string-match "^<a +\\(href.+\\)$" fstring))
+	     (setq fstring (concat "<a class=\"" 
+				   ewo-int-link-addition "\" " 
+				   (match-string 1 fstring)))))
+	  ((eq ewo-int-link-addition-type 'span) 
+	   (when (and ewo-ext-link-addition (string-match "^\\(<a[^>]+>[^>]+\\)</a>$" fstring))
+	     (setq fstring (concat (match-string 1 fstring) 
+				   " <span class=\"" ewo-int-link-addition "\"></span></a>"))))))
+  fstring)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -944,6 +847,11 @@ the addition of the <div> surrounding all the body."
    ;; Closing document.
    "</body>\n</html>"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Backend definition and interactive functions
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; defines the backend.
 ;;
@@ -974,6 +882,16 @@ Return output file name."
 				      org-html-extension
 				      "html"))
 		      plist pub-dir))
+
+;; main entry point ! 
+;;;###autoload
+(defun ewo-publish ()
+  "Publish the currently defined website."
+  (interactive)
+  (save-excursion
+    (ewo-gen-project-alist)
+    (org-publish "website")))
+
 
 (provide 'ox-ewo)
 

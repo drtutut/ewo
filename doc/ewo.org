@@ -71,6 +71,84 @@
    additionnal documents of your site, which are stored in the
    =documents= directory (see section [[#SiteStructure][Site Structure]]).
    
+** variable =ewo-html-preamble=
+
+   A string containing HTML code to be included in the preamble of a page.
+
+** variable =ewo-html-postamble=
+
+   A string containing HTML code to be included in the postamble of a
+   page. Actually contains the inclusion of the bootstrap javascript
+   part.
+
+** variable =ewo-html-head=
+
+   A string containing the /head of the home page/. This code will be
+   included in the <head></head> section. Be careful if you tweak this
+   variable, because it contains the inclusion of different CSS
+   stylesheet (bootstrap in particular, but also jquery).
+
+** variable =ewo-cat-html-head=
+
+   A string containing the head of the pages contained in a category.
+   This code will be included in the <head></head> section. Be careful
+   if you tweak this variable, because it contains the inclusion of
+   different CSS stylesheet (bootstrap in particular, but also
+   jquery). it also uses the ~<lisp></lisp>~ mechanism to universalize
+   links to files.
+
+** variable =ewo-ext-link-addition=
+   :PROPERTIES:
+   :CUSTOM_ID: ExtLink
+   :END:
+   
+   A string describing the class of external links. To activate this
+   feature please consult the documentation of
+   [[#ExtLinkAdd][=ewo-ext-link-addition-type=]].
+
+** variable =ewo-int-link-addition=
+   :PROPERTIES:
+   :CUSTOM_ID: IntLink
+   :END:
+
+   A string describing the class of internal links. To activate this
+   feature please consult the documentation of
+   [[#IntLinkAdd][=ewo-int-link-addition-type=]].
+
+** variable =ewo-ext-link-addition-type=
+   :PROPERTIES:
+   :CUSTOM_ID: ExtLinkAdd
+   :END:
+   
+   An atom describing the type of addtion performed on external
+   links. The possible values are :
+
+   - ~anchor~ :: The content of variable [[#ExtLink][=ewo-ext-link-addition=]] is
+        interpreted as a class attribute specification which is added
+        to the external link =<a>= element.
+   - ~span~ :: The content of variable [[#ExtLink][=ewo-ext-link-addition=]] is
+        interpreted as a span class attribute specification. A
+        =<span>= element is added at the end of the link with the
+        specified class.
+   - ~nil~ :: No transformation is performed on external links.
+
+** variable =ewo-int-link-addition-type=
+   :PROPERTIES:
+   :CUSTOM_ID: IntLinkAdd
+   :END:
+
+   An atom describing the type of addtion performed on internal
+   links. The possible values are :
+
+   - =anchor= :: The content of variable [[#IntLink][=ewo-int-link-addition=]] is
+        interpreted as a class attribute specification which is added
+        to the internal link =<a>= element.
+   - =span= :: The content of variable [[#IntLink][=ewo-int-link-addition=]] is
+        interpreted as a span class attribute specification. A
+        =<span>= element is added at the end of the internal link with
+        the specified class.
+   - =nil= :: No transformation is performed on internal links.
+
 ** Example
 
 #+BEGIN_SRC emacs-lisp
@@ -214,41 +292,45 @@ org manual)
     mechanism. For instance:
 
     #+BEGIN_SRC org
-    #+ATTR_HTML: :class panel-warning
-    #+BEGIN_panel
-    #+BEGIN_panel-heading
-    Question
-    #+END_panel-heading
-    #+BEGIN_panel-body
-    Où se trouve le fichier correspondant à la page qui est ouverte ?
-    #+END_panel-body
-    #+END_panel
+      ,#+ATTR_HTML: :class panel-warning
+      ,#+BEGIN_panel
+      ,#+BEGIN_panel-heading
+      Question
+      ,#+END_panel-heading
+      ,#+BEGIN_panel-body
+      Où se trouve le fichier correspondant à la page qui est ouverte ?
+      ,#+END_panel-body
+      ,#+END_panel
     #+END_SRC
 
     This will create a warning panel, i.e. a =<div>= of class =panel
     panel-warning=.
 
 *** Turning a subtree into a panel
+    :PROPERTIES:
+    :END:
 
     For this, just add a =HTML_CONTAINER_CLASS= property to the
     enclosing section of the subtree, as in :
 
     #+BEGIN_SRC org
       ,* Mise en garde, méthode !
-      :PROPERTIES:
-      :HTML_CONTAINER_CLASS: panel panel-danger
-      :END:
+        :PROPERTIES:
+        :HTML_CONTAINER_CLASS: panel panel-danger
+        :END:
 
-      Au cours des TP, vous allez être amenés à modifier les fichiers de
-      configuration existants d'Apache. Une erreur dans une ligne peut
-      engendrer un dysfonctionnement du serveur. Pour éviter tout
-      problème, *faites systématiquement une copie de toute ligne modifiée
-      et mettez cette copie en commentaire.* En procédant de cette façon
-      il est aisé de revenir dans l'état initial. Parfois, une copie de la
-      section modifiée est encore plus sûr. 
+        Au cours des TP, vous allez être amenés à modifier les fichiers de
+        configuration existants d'Apache. Une erreur dans une ligne peut
+        engendrer un dysfonctionnement du serveur. Pour éviter tout
+        problème, *faites systématiquement une copie de toute ligne modifiée
+        et mettez cette copie en commentaire.* En procédant de cette façon
+        il est aisé de revenir dans l'état initial. Parfois, une copie de la
+        section modifiée est encore plus sûr.
     #+END_SRC
 
 ** Bootstrap rows and columns
+   :PROPERTIES:
+   :END:
 
    One of the strengths of bootsrap is its grid system which allows
    the creation of responsive pages. 
@@ -270,34 +352,40 @@ org manual)
 
    #+BEGIN_SRC org
      ,** Cours
-     :PROPERTIES:
-     :HTML_CONTAINER_CLASS: panel panel-primary
-     :BOOTSTRAP_COLUMN: col-md-4
-     :BOOTSTRAP_ROW_BEGIN: t
-     :END:
+        :PROPERTIES:
+        :HTML_CONTAINER_CLASS: panel panel-primary
+        :BOOTSTRAP_COLUMN: col-md-4
+        :BOOTSTRAP_ROW_BEGIN: t
+        :END:
 
      Cours 1.
 
      ,** TD
-     :PROPERTIES:
-     :HTML_CONTAINER_CLASS: panel panel-primary 
-     :BOOTSTRAP_COLUMN: col-md-4
-     :END:
+        :PROPERTIES:
+        :HTML_CONTAINER_CLASS: panel panel-primary
+        :BOOTSTRAP_COLUMN: col-md-4
+        :END:
 
      blahblah.
 
      ,** TP
-     :PROPERTIES:
-     :HTML_CONTAINER_CLASS: panel panel-primary
-     :BOOTSTRAP_COLUMN: col-md-4
-     :BOOTSTRAP_ROW_END: t
-     :END:
+        :PROPERTIES:
+        :HTML_CONTAINER_CLASS: panel panel-primary
+        :BOOTSTRAP_COLUMN: col-md-4
+        :BOOTSTRAP_ROW_END: t
+        :END:
 
      blahblah.
 
    #+END_SRC
 
+** Table of contents
+
+   Ewo is able to generate a table of contents for any page as a
+   dropdown menu in the navigation bar. It bases the generation on the
+   ~toc:~ and ~num:~ options of the org document.
+
 * Publishing the site
 
-  To publish a site, either invoke the ~ewo-publish~ function.
+  To publish a site,  invoke the ~ewo-publish~ function.
 
