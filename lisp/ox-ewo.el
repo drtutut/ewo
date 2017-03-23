@@ -543,7 +543,7 @@ channel."
 toc, info is an alist ised as a communication channel."
   (concat "        <li class=\"dropdown ewo-toc\">
           <a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Table des matières <span class=\"caret\"></span></a>
-          <ul class=\"dropdown-menu\">"
+          <ul class=\"dropdown-menu dropdown-menu-right\">"
           (ewo-toc-content depth info)
 "</ul>
         </li>")
