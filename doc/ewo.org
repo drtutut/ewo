@@ -1,15 +1,67 @@
 #+TITLE: EWO (Easy Website with Org)
+#+AUTHOR: Eric Würbel
+#+EMAIL: eric.wurbel@laposte.net
 
 * Introduction
 
-  EWO is an extension to the org HTML publishing mechanism. It allows
+  This is EWO 2.0.
+
+  EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
 
   Namely, a category is a directory in the web site tree, associated
-  with an entry in the navigation bar.. This allows the automatic
+  with an entry in the navigation bar. This allows the automatic
   generation of a navigation bar.
 
   EWO relies on the [[http://getbootstrap.com/][boostrap]] framework.
+
+  Besides, EWO brings some tools to easily use some functionnalities
+  of the bootstrap framework.
+
+  EWO started as a personnal project : allows the generation of my
+  professionnal web pages from orgmode documents. 
+
+  Version 2.0 is a partial rewrite of the original project, to define
+  EWO as a derived back-end of the org html back-end.
+
+* Installation
+
+  Add the directory of ewo lisp files to the =load-path= variable. For
+  example :
+
+  #+BEGIN_SRC emacs-lisp
+    (add-to-list 'load-path "~/local/emacs-lisp/ewo-2.0beta")
+  #+END_SRC
+  
+  Org mode should be loaded :
+
+  #+BEGIN_SRC emacs-lisp
+    (require 'org)
+  #+END_SRC
+
+  To load EWO, add :
+  #+BEGIN_SRC emacs-lisp
+    (require 'ox-ewo)
+  #+END_SRC
+
+  If you want to assign a key combination to the ewo publishing
+  function, add it in the org mode map. For example :
+  #+BEGIN_SRC emacs-lisp
+    (define-key org-mode-map (kbd "C-c C-=") 'ewo-publish)
+  #+END_SRC
+
+  Customize the variable =org-export-backends= and add the =ewo=
+  backend to it.
+
+  You should be done. Go to the new section to start a new website.
+
+* Starting a fresh project
+
+  1. Copy the content of the =www= directory in ewo to the root of your project.
+  2. Define the variables of your project, as described in the section
+     [[#DefEWOProject][Defining an EWO project]].
+  3. The root of your website, and the root of each category *must*
+     contain an =index.org= file.
 
 * Defining an EWO project
   :PROPERTIES:
@@ -180,7 +232,6 @@
   labeled "Research" and its subdirectory will be
   =~/Documents/www/MySite/org/Research=. It will use the glyphicon
   =glyphicon-eye-open= as an icon.
-
 * Site structure 
   :PROPERTIES:
   :CUSTOM_ID: SiteStructure
@@ -238,14 +289,6 @@
 
    There are no requirements in this directory. You should put the
    documents linked to the pages of your site here.
-* Starting a fresh project
-
-  1. Copy the content of the =www= directory in ewo to the root of your project.
-  2. Define the variables of your project, as described in the section
-     [[#DefEWOProject][Defining an EWO project]].
-  3. The root of your website, and the root of each category *must*
-     contain an =index.org= file.
-
 * Deeper customization
 ** the ~<lisp></lisp>~ mechanism
 
@@ -384,7 +427,6 @@ org manual)
    Ewo is able to generate a table of contents for any page as a
    dropdown menu in the navigation bar. It bases the generation on the
    ~toc:~ and ~num:~ options of the org document.
-
 * Publishing the site
 
   To publish a site,  invoke the ~ewo-publish~ function.
