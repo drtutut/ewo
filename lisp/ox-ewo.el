@@ -23,7 +23,7 @@
 ;;;
 ;;; [NOT IMPLEMENTED YET]
 ;;;
-;;; TODO: to be worked out and redifined. Not implemented.
+;;; TODO: to be worked out and redefined. Not implemented.
 ;;;
 ;;; The category correspond to one page (`index.org') in the category
 ;;; directory. The resulting `index.html' page is automagically
@@ -42,7 +42,6 @@
 ;;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(provide 'ewo)
 (require 'org)
 (require 'ox)
 (require 'ox-html)
@@ -888,3 +887,8 @@ Return output file name."
 				      org-html-extension
 				      "html"))
 		      plist pub-dir))
+
+(provide 'ewo)
+
+;;; ox-ewo.el ends here
+
