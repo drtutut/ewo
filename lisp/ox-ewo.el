@@ -316,10 +316,10 @@ the preamble before if not `nil'."
      :publishing-function 'ewo-html-publish-to-html
      :recursive t
      :headline-levels 3
-     :style-include-default nil ; seems to be obsolete
+     ;; :style-include-default nil           ; seems to be obsolete
      :html-head-include-default-style nil ; use this now
      :section-numbers nil
-     :table-of-contents nil ; seems to be obsolete
+     ;; :table-of-contents nil ; seems to be obsolete
      :with-toc t ; use this now
      :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
      :html-head ewo-cat-html-head
@@ -362,10 +362,10 @@ function `ewo-publish'."
 	   :publishing-directory ewo-publish-dir
 	   :publishing-function 'ewo-html-publish-to-html
 	   :headline-levels 3
-	   :style-include-default nil ; seems to be obsolete
+	   ;; :style-include-default nil           ; seems to be obsolete
 	   :html-head-include-default-style nil ; use this now
 	   :section-numbers nil
-	   :table-of-contents nil ; seems to be obsolete
+	   ;; :table-of-contents nil       ; seems to be obsolete
            :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	   :html-head ewo-html-head
@@ -520,7 +520,7 @@ list used as a communication channel."
   "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
 Only allowed functions with allowed args are possible, and args
 must be in a list of allowed variables."
-  (when (eq backend 'html)
+  (when (eq backend 'ewo)
     ;; build the environment of the function calls (i.e. variables available to the user in templates
     (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
     (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
@@ -549,25 +549,26 @@ must be in a list of allowed variables."
 ;; hack. It highlights the need for a cleaner mechanism, like an
 ;; extension of the html-export backend.
 
-(defun ewo-filter-build-toc (fstring backend channel)
-  "Build the table of content. Preamble generation has put a <li
-  class=\"dropdown ewo-toc\"><a...></a><ul
-  class=\"dropdown-menu>nnnn</ul></li> element. the `NNNN' number
-  is the level of toc generation."
-  (let ((search-start nil)
-        (re "^[[:space:]]*<li[[:space:]]+class=\"dropdown[[:space:]]+ewo-toc\">[[:space:]]*\n+[[:space:]]*<a.+</a>[[:space:]]*\n+[[:space:]]*<ul class=\"dropdown-menu\">\\([0-9]+\\)</ul>"))
-    (when (string-match re fstring)
-      (let* ((start-d (match-beginning 1))
-             (end-d   (match-end 1))
-             (level   (string-to-number (substring fstring start-d end-d))))
-        (concat 
-         (substring fstring 0 (- start-d 1)) 
-         (ewo-html-toc level channel)
-         (substring fstring end-d)))))) 
+;; (defun ewo-filter-build-toc (fstring backend channel)
+;;   "Build the table of content. Preamble generation has put a <li
+;;   class=\"dropdown ewo-toc\"><a...></a><ul
+;;   class=\"dropdown-menu>nnnn</ul></li> element. the `NNNN' number
+;;   is the level of toc generation."
+;;   (let ((search-start nil)
+;;         (re "^[[:space:]]*<li[[:space:]]+class=\"dropdown[[:space:]]+ewo-toc\">[[:space:]]*\n+[[:space:]]*<a.+</a>[[:space:]]*\n+[[:space:]]*<ul class=\"dropdown-menu\">\\([0-9]+\\)</ul>"))
+;;     (when (string-match re fstring)
+;;       (let* ((start-d (match-beginning 1))
+;;              (end-d   (match-end 1))
+;;              (level   (string-to-number (substring fstring start-d end-d))))
+;;         (concat 
+;;          (substring fstring 0 (- start-d 1)) 
+;;          (ewo-html-toc level channel)
+;;          (substring fstring end-d)))))) 
 
+;; installation performed directly during backend declaration.
 ;;  Register filter functions
-(setq org-export-filter-final-output-functions
-      '(ewo-filter-prepost))
+;; (setq org-export-filter-final-output-functions
+;;       '(ewo-filter-prepost))
 ;; (add-to-list 'org-export-filter-final-output-functions
 ;;       'ewo-filter-build-toc)
 
@@ -575,20 +576,23 @@ must be in a list of allowed variables."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; body filter : encapsulate body in a <div class="container">.
 
-(defun ewo-filter-body (fstring backend channel)
-  "Encapsulate the body of a page inside a <div
-class=\"container\">. This is a filter on the body of a document,
-i.e. the body of a page."
-  ;; (princ (format "body is \"%s\"\n" fstring))
-  (if (eq backend 'html)
-    (concat 
-     "<div class=\"container\">\n"
-     fstring
-     "</div> <!-- class container -->\n")
-    fstring))
+;; not needed anymore : performed directly by template translation
+;; function.
 
-(setq org-export-filter-body-functions
-      '(ewo-filter-body))
+;; (defun ewo-filter-body (fstring backend channel)
+;;   "Encapsulate the body of a page inside a <div
+;; class=\"container\">. This is a filter on the body of a document,
+;; i.e. the body of a page."
+;;   ;; (princ (format "body is \"%s\"\n" fstring))
+;;   (if (eq backend 'html)
+;;     (concat 
+;;      "<div class=\"container\">\n"
+;;      fstring
+;;      "</div> <!-- class container -->\n")
+;;     fstring))
+
+;; (setq org-export-filter-body-functions
+;;       '(ewo-filter-body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Header filter
@@ -673,8 +677,9 @@ columns and row begin or end."
   
   fstring)
 
-(setq org-export-filter-headline-functions 
-      '(ewo-filter-headline))
+;; installation performed directly during backend declaration.
+;; (setq org-export-filter-headline-functions 
+;;       '(ewo-filter-headline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; drawer filter
@@ -707,8 +712,9 @@ by the headline filter `ewo-filter-headline'."
   ;; return a newline because filter system doesn't like empty strings
   "\n")
 
-(setq org-export-filter-property-drawer-functions
-      '(ewo-filter-drawer))
+;; installation performed directly during backend declaration.
+;; (setq org-export-filter-property-drawer-functions
+;;       '(ewo-filter-drawer))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -718,8 +724,8 @@ by the headline filter `ewo-filter-headline'."
   (when (not (eq backend 'html)) nil)
   (princ (format "section : \"%s\"\n" fstring)))
 
-(setq org-export-filter-section-functions
-      '())
+;; (setq org-export-filter-section-functions
+;;       '())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; link filter
@@ -750,8 +756,9 @@ by the headline filter `ewo-filter-headline'."
   fstring)
 
 
-(setq org-export-filter-link-functions
-      '(ewo-filter-link))
+;; installation performed directly during backend declaration.
+;; (setq org-export-filter-link-functions
+;;       '(ewo-filter-link))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -856,11 +863,86 @@ CONTENTS is the transcoded contents string.  INFO is a plist used
 as a communication channel."
   (concat
    (ewo-html-navbar info)
-   ;; Table of contents. ### TODO: à déplacer dans ewo-html-navbar
    ;; Document contents.
    contents
    ;; Footnotes section.
    (org-html-footnote-section info)))
+
+(defun ewo-html-template (contents info)
+  "Return complete document string after HTML conversion.
+CONTENTS is the transcoded contents string.  INFO is a plist
+holding export options.
+
+Largely borrowed from org-html-template. The only difference is
+the addition of the <div> surrounding all the body."
+  (concat
+   (when (and (not (org-html-html5-p info)) (org-html-xhtml-p info))
+     (let* ((xml-declaration (plist-get info :html-xml-declaration))
+	    (decl (or (and (stringp xml-declaration) xml-declaration)
+		      (cdr (assoc (plist-get info :html-extension)
+				  xml-declaration))
+		      (cdr (assoc "html" xml-declaration))
+		      "")))
+       (when (not (or (not decl) (string= "" decl)))
+	 (format "%s\n"
+		 (format decl
+			 (or (and org-html-coding-system
+				  (fboundp 'coding-system-get)
+				  (coding-system-get org-html-coding-system 'mime-charset))
+			     "iso-8859-1"))))))
+   (org-html-doctype info)
+   "\n"
+   (concat "<html"
+	   (cond ((org-html-xhtml-p info)
+		  (format
+		   " xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"%s\" xml:lang=\"%s\""
+		   (plist-get info :language) (plist-get info :language)))
+		 ((org-html-html5-p info)
+		  (format " lang=\"%s\"" (plist-get info :language))))
+	   ">\n")
+   "<head>\n"
+   (org-html--build-meta-info info)
+   (org-html--build-head info)
+   (org-html--build-mathjax-config info)
+   "</head>\n"
+   "<body>\n<div class=\"container\">\n"
+   (let ((link-up (org-trim (plist-get info :html-link-up)))
+	 (link-home (org-trim (plist-get info :html-link-home))))
+     (unless (and (string= link-up "") (string= link-home ""))
+       (format (plist-get info :html-home/up-format)
+	       (or link-up link-home)
+	       (or link-home link-up))))
+   ;; Preamble.
+   (org-html--build-pre/postamble 'preamble info)
+   ;; Document contents.
+   (let ((div (assq 'content (plist-get info :html-divs))))
+     (format "<%s id=\"%s\">\n" (nth 1 div) (nth 2 div)))
+   ;; Document title.
+   (when (plist-get info :with-title)
+     (let ((title (plist-get info :title))
+	   (subtitle (plist-get info :subtitle))
+	   (html5-fancy (org-html--html5-fancy-p info)))
+       (when title
+	 (format
+	  (if html5-fancy
+	      "<header>\n<h1 class=\"title\">%s</h1>\n%s</header>"
+	    "<h1 class=\"title\">%s%s</h1>\n")
+	  (org-export-data title info)
+	  (if subtitle
+	      (format
+	       (if html5-fancy
+		   "<p class=\"subtitle\">%s</p>\n"
+		 "\n<br>\n<span class=\"subtitle\">%s</span>\n")
+	       (org-export-data subtitle info))
+	    "")))))
+   contents
+   (format "</%s>\n" (nth 1 (assq 'content (plist-get info :html-divs))))
+   ;; Postamble.
+   (org-html--build-pre/postamble 'postamble info)
+   ;; Closing <div class="container">
+   "</div> <!-- class container -->\n"
+   ;; Closing document.
+   "</body>\n</html>"))
 
 
 ;; defines the backend.
@@ -868,9 +950,14 @@ as a communication channel."
 ;; From now on, navigation bar is generated by the inner-template
 ;; generator, not by the preamble. The preamble will be totally deactivated.
 
-(org-export-define-derived-backend 'ewo-html 'html
+(org-export-define-derived-backend 'ewo 'html
   :translate-alist '(;(headline . ewo-html-headline-translator)
-                     (inner-template . ewo-html-inner-template)))
+                     (inner-template . ewo-html-inner-template)
+                     (template . ewo-html-template))
+  :filters-alist '((:filter-link . ewo-filter-link)
+                   (:filter-property-drawer . ewo-filter-drawer)
+                   (:filter-headline . ewo-filter-headline)
+                   (:filter-final-output . ewo-filter-prepost)))
 
 ;;;###autoload
 (defun ewo-html-publish-to-html (plist filename pub-dir)
@@ -882,13 +969,13 @@ publishing directory.
 
 Return output file name."
   (princ "ewo-html publishing started\n")
-  (org-publish-org-to 'ewo-html filename
+  (org-publish-org-to 'ewo filename
 		      (concat "." (or (plist-get plist :html-extension)
 				      org-html-extension
 				      "html"))
 		      plist pub-dir))
 
-(provide 'ewo)
+(provide 'ox-ewo)
 
 ;;; ox-ewo.el ends here
 
