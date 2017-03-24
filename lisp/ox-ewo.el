@@ -142,6 +142,11 @@ The defined properties are :
 	  :key-type string  
 	  :value-type plist))
 
+(defcustom ewo-home-name "Home"
+  "String naming the home the site."
+  :group 'ewo
+  :type 'string)
+
 (defcustom ewo-doc-extensions "pdf\\|doc\\|odt\\|ods\\|odp\\|odg\\|tar.gz\\|tgz\\|tar.bz2\\|zip"
   "Regular expression describing allowed extensions for
 additional documents in a website."
@@ -443,7 +448,8 @@ function `ewo-publish'."
     0))
 
 (defun ewo-get-level (filename)
-  "Get file level from root"
+  "Get file level from root. Used to determine the value of the
+template variable `ewo:catlevel'."
   (let* ((full-root (expand-file-name ewo-root-dir))
 	 (regex (concat full-root  
 			"\\(\\(/[-_a-zA-Z0-9]+\\)+\\)?/[-_a-zA-Z0-9]+\\.org")))
@@ -454,24 +460,154 @@ function `ewo-publish'."
 	  (ewo-int-getlevel 
 	   (substring filename (match-beginning 1) (match-end 1)) 0))
       nil)))
-	 
-(defvar ewo-template-funcs '(ewo-rootlink)
-  "Safe functions usable in templates.")
-(defvar ewo-template-vars '(ewo:catlevel)
-  "Variables usable in templates.")
 
-(defun ewo-secure-formp (form)
-  "Check if FORM is a safe formula."
-  (let ((func (car form)))
-    (when (memq func ewo-template-funcs)
-      (ewo-secure-argsp (cdr form)))))
+(defun ewo-get-catname (channel)
+  "Return the category name of the current document as a string,
+or an empty string if this document is not in a category (root
+index case)."
+  (let ((name (plist-get channel :ewo-cat-name)))
+    (if name name "")))
 
+;; needs more thinking : the breadcrumb have to consider the current
+;; category active when we are on the index page of the category, but
+;; what if we are in the category but not on the index file ? Do we
+;; create a special status for the subdirectories of the category ? ->
+;; do we plan subcategories ?
+;;
+;; Pros : more clean organization
+;; Cons : less flexibility.
+;;
+;; In the meantime, all the architecture to include template functions
+;; which need for the communication channel is ready.
+
+;; (defun ewo-breadcrumb (channel catname)
+;;   "Build a bootstrap breadcrumb as a string.  CHANNEL is a
+;; property list useed as a communication channel, CATNAME is the
+;; category name."  
+;;   (concat
+;;    "<ol class=\"breadcrumb\">"
+;;    (let ((pub-level (ewo-get-level (plist-get channel :input-file))))
+;;      (concat 
+;;       (cond ((= level 0) "<li class=\"active>")
+;;             (t           (concat "<li><a href=\"" (ewo-root-link pub-level) "\">")))
+;;       ewo-home-name
+;;       (if (/= level 0) "</a>" "")
+;;       "</li>"
+;;       (cond ((= level 1) "<li class=\"active\">")
+;;             (t           (concat "<li><a href=\"" (ewo-root-link pub-level) "/\">")))
+;;       catname
+;;       (if (/= level 1) "</a>" "")
+;;       "</li>"
+;;       ( 
+;; ))))
+  
+
+(defvar ewo-template-funcs '((ewo-rootlink . (:arity 1 :optargs t :addchannel nil))
+                             (+ . (:arity 0 :optargs t :addchannel nil))
+                             (- . (:arity 0 :optargs t :addchannel nil))
+                             (* . (:arity 0 :optargs t :addchannel nil))
+                             (/ . (:arity 2 :optargs t :addchannel nil))
+                             (% . (:arity 2 :optargs nil :addchannel nil))
+                             (mod . (:arity 2 :optargs nil :addchannel nil))
+                             (1+ . (:arity 1 :optargs nil :addchannel nil))
+                             (1- . (:arity 1 :optargs nil :addchannel nil))
+                             (quote . (:arity 1 :optargs nil :addchannel nil)))
+  "Safe functions and their arity usable in templates.
+
+The property list associated to each function contains the following entries
+
+`:arity' : an integer specifying the arity of the function (mandatory args).
+
+`:optargs' : a boolean indicating wether this function accepts
+optionnal arguments.
+
+`:addchannel' : a boolean indicating if the communication channel
+should be passed as first arg to the function.
+")
+
+(defvar ewo-template-vars '(ewo:catlevel ewo:catname)
+  "List of variables which can be safely used in templates.")
+
+
+(defun ewo-secure-callp (expr)
+  "Check if EXPR is a n authorized function call.
+
+Return the EXPR on success, with modified args if function needs
+the communication channel, in which case the channel is added as
+first arg. Return `nil' otherwise."
+  (let* ((funcname (car expr))
+         (args     (cdr expr))
+         (funcentry (assq funcname ewo-template-funcs)))
+    ;; (princ (format "funcname : %s\n" funcname))
+    ;; (princ (format "args : %s\n" args))
+    ;; (princ (format "funcentry : %s\n" funcentry))
+    (when funcentry
+      (let* ((funcdesc    (cdr funcentry))
+             (funcarity   (plist-get funcdesc :arity))
+             (funcoptargs (plist-get funcdesc :optargs)))
+        (when (or 
+               (and funcoptargs (>= (length args) funcarity))
+               (and (not funcoptargs) (= (length args) funcarity)))
+          (let ((res      (ewo-secure-argsp args))
+                (needchan (plist-get funcdesc :addchannel)))
+            (if needchan
+                (cons funcname (cons 'channel res))
+              (cons funcname res))))))))
+           
 (defun ewo-secure-argsp (args)
-  "Check if the ARGS of a function call are safe."  
+  "Check if the ARGS of a function call are safe.
+
+Return the ARGS, or `nil' otherwise."
+  ;; (princ (format "args check %s\n" args)) 
   (if (null args)
-      t
-    (when (memq (car args) ewo-template-vars)
-      (ewo-secure-argsp (cdr args)))))
+      (progn
+        ;; (princ "==> ()\n")
+        '())
+    (when (ewo-secure-expressionp (car args))
+      (let ((res (ewo-secure-argsp (cdr args))))
+        ;; (princ (format "rec return from argsp : %s\n" res)) 
+        ;; (princ (format "==> %s\n" (cons (car args) res))) 
+        (cons (car args) res)))))
+
+(defun ewo-secure-varp (expr)
+  "Check if EXPR is an authorized variable.
+
+Return the EXPR upon success, `nil' otherwise. "
+  (when (memq expr ewo-template-vars) expr))
+
+(defun ewo-secure-expressionp (expr)
+  "Check if EXPR is a secure expression. secure expressions are
+conform to the following grammar:
+
+<expression> ::= `(' <fun> <expressionlist> `)' |
+                 <var> |
+                 <constant>
+
+<expressionlist> ::= <expressionlist> <expression> | 
+
+<fun> must be a known function. arity is checked (see `ewo-secure-callp')
+
+<var> must be a known variable name (see `ewo-secure-varp')
+
+<constants> are numbers or strings
+
+Return the expression, possibly modified (see `ewo-secure-callp')
+if it is secure, or `nil' otherwise.
+"
+  (cond 
+   ((listp expr)
+    ;; (princ (format "call check %s\n" expr))
+    (ewo-secure-callp expr))
+   ((numberp expr) 
+    ;; (princ (format "number check %s\n" expr))
+    expr)
+   ((stringp expr) 
+    ;; (princ (format "string check %s\n" expr))
+    expr)
+   ((symbolp expr) 
+    ;; (princ (format "var check %s\n" expr))
+    (ewo-secure-varp expr))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; toc generation system
@@ -608,22 +744,27 @@ Only allowed functions with allowed args are possible, and args
 must be in a list of allowed variables."
   (when (eq backend 'ewo)
     ;; build the environment of the function calls (i.e. variables available to the user in templates
-    (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
+    ;; (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
     (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
+          (ewo:catname  (ewo-get-catname channel))
 	  (search-start nil))
+      ;; (princ (format "ewo:catlevel: %s\n" ewo:catlevel))
+      ;; (princ (format "ewo:catname: %s\n" ewo:catname))
       (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
 	(let* ((start (match-beginning 1))
 	       (end   (match-end 1))
 	       (strform (substring fstring start end))
 	       (form (read strform)))
-	  (princ (format "===== lisp exp is \"%s\"\n" strform))
-	  (if (ewo-secure-formp form)
-	      (let ((result (eval form)))
-		(setq fstring (concat
-			       (substring fstring 0 (- start 6)) ; jq avant <lisp>
-			       result
-			       (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
-	    (error "unsecure or malformed expression : %s" strform))
+	  ;; (princ (format "===== lisp expr is \"%s\"\n" strform))
+          (let ((final-form (ewo-secure-expressionp form)))
+            ;; (princ (format "===== lisp final expr is \"%s\"\n" final-form))
+            (if final-form
+                (let* ((result (eval final-form)))
+                  (setq fstring (concat
+                                 (substring fstring 0 (- start 6)) ; jq avant <lisp>
+                                 result
+                                 (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
+              (error "unsecure or malformed expression : %s" strform)))
 	  (setq search-start end)))))
   fstring)
 
