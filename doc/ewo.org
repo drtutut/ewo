@@ -4,7 +4,7 @@
 
 * Introduction
 
-  This is EWO 2.0.
+  This is EWO 2.1
 
   EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
