@@ -143,7 +143,7 @@ The defined properties are :
 	  :value-type plist))
 
 (defcustom ewo-home-name "Home"
-  "String naming the home the site."
+  "String naming the home home of the site."
   :group 'ewo
   :type 'string)
 
@@ -723,7 +723,7 @@ plist used as a communication channel."
       </div>
       <div id=\"navbar\" class=\"navbar-collapse collapse\">
         <ul class=\"nav navbar-nav\">
-          <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> Accueil</a></li>\n" 
+          <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> " ewo-home-name "</a></li>\n" 
 	  (ewo-categories-nav name ewo-categories)
           (let ((depth (plist-get info :with-toc)))
             (when depth (ewo-html-toc depth info)))

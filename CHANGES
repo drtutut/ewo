@@ -1,0 +1,11 @@
+Version 2.1
+===========
+
+        - new user expressions system (<lisp> elements)
+          + Expressions can use arithmetic operators,
+          + possibility to define user functions with variable number
+            of args
+          + possibility to define functions which need the
+            communication channel of the back-end
+        - new variable `ewo-home-name' to hold the name of the home
+          page (for the navigation bar)
