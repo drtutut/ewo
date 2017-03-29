@@ -1,0 +1,22 @@
+#+TITLE: Development of blogging categories.
+
+* General presentation
+
+
+  A dynamic category consists of a folder (like a static category).
+  
+  A dynamic category contains an index.org file. Only the first
+  section of this file is freely editable. Next sections are generated
+  by the EWO system.
+
+  Other org files in the category are articles. They are freely
+  editable.
+
+  These files can contain a section with property HEADNOTE. 
+
+  The `ewo-blog-publish' function invoked in a buffer containing a
+  file other than index.org in a dynamic category:
+
+  - adds a dated header entry in the index.org file
+  - adds a excerpt of the begining of the file to the generated
+    section in index.org.
