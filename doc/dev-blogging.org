@@ -5,7 +5,9 @@
 
   A dynamic category consists of a folder (like a static category).
   
-  A dynamic category contains an index.org file. Only the first
+** First scenario
+
+  A dynamic category contains an =index.org= file. Only the first
   section of this file is freely editable. Next sections are generated
   by the EWO system.
 
@@ -14,9 +16,71 @@
 
   These files can contain a section with property HEADNOTE. 
 
-  The `ewo-blog-publish' function invoked in a buffer containing a
-  file other than index.org in a dynamic category:
+  The ~ewo-blog-publish~ function invoked in a buffer containing a
+  file other than =index.org= in a dynamic category:
 
-  - adds a dated header entry in the index.org file
+  - adds a dated header entry in the index.org file (the ~DATE~
+    keyword from the file is used).
   - adds a excerpt of the begining of the file to the generated
-    section in index.org.
+    section in index.org (the HEADNOTE).
+
+  
+  An article contains the keyword ~EWO_STATE~. This keyword can take
+  the following values : ~PUBLISHED~ or ~UNPUBLISHED~. Any value other
+  than these two is considered as if ~UNPUBLISHED~ wa used. If the
+  ~EWO_STATE~ keyword is missing, the exporter behaves as if
+  ~UNPUBLISHED~ was specified.
+
+  During export, only ~PUBLISHED~ articles are published.
+
+*** pros
+
+    the publishing mecanism of org is maintained. The only difference
+    is that, during the export process of index.org, we have to check
+    other files.
+
+*** cons
+
+** Second scenario
+
+   A dynamic category contains an =index.org= file.
+
+   Each section containing the property EWO_BLOG_ENTRY is considered
+   as an article. If the headline of the section is marked with DONE,
+   it will be published. Any other todo keyword blocks the
+   publication.
+
+   Each article will generale a html file containing the article.
+   
+   the =index.org= export process will :
+   1. generate an =index.html= file containing :
+      - a section containing introductory material. This section
+        should have the property HEADNOTE
+      - the headings of the articles with their date of publication
+        and author followed by an abstract generated with the
+        subsection containing the property HEADNOTE.
+   2. as many html files as there are publishable sections in the
+      =index.org= file.
+
+      
+   The name of the generated html files for the articles use value of
+   the property EWO_FILENAME. If there is no such property attached to
+   the section containing an article, an error is issued.
+
+*** pros
+
+    The method for selecting articles to be published uses standard
+    mechanisms of orgmode (TODO keywords).
+
+*** cons
+
+    One file (index.org) generates a buch of files. This is not a
+    standard approach of orgmode. The export mechanism will be very
+    complicated (in particular regarding the need for republication).
+
+    It is highly probable that several passes on the index.org file
+    will be needed.
+  
+
+  
+
