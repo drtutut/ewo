@@ -65,7 +65,7 @@
 
 ;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
 ;; <lisp></lisp> pour vraiment avoir du lexical binding.
-;; (setq lexical-binding t)
+(setq lexical-binding t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -503,9 +503,9 @@ index case)."
   
 
 (defvar ewo-template-funcs '((ewo-rootlink . (:arity 1 :optargs t :addchannel nil))
-                             (+ . (:arity 0 :optargs t :addchannel nil))
-                             (- . (:arity 0 :optargs t :addchannel nil))
-                             (* . (:arity 0 :optargs t :addchannel nil))
+                             (+ . (:arity 2 :optargs t :addchannel nil))
+                             (- . (:arity 2 :optargs t :addchannel nil))
+                             (* . (:arity 2 :optargs t :addchannel nil))
                              (/ . (:arity 2 :optargs t :addchannel nil))
                              (% . (:arity 2 :optargs nil :addchannel nil))
                              (mod . (:arity 2 :optargs nil :addchannel nil))
@@ -576,7 +576,7 @@ Return the EXPR upon success, `nil' otherwise. "
   (when (memq expr ewo-template-vars) expr))
 
 (defun ewo-secure-expressionp (expr)
-  "Check if EXPR is a secure expression. secure expressions are
+  "Check if EXPR is a secure expression. secure expressions
 conform to the following grammar:
 
 <expression> ::= `(' <fun> <expressionlist> `)' |
@@ -759,7 +759,9 @@ must be in a list of allowed variables."
           (let ((final-form (ewo-secure-expressionp form)))
             ;; (princ (format "===== lisp final expr is \"%s\"\n" final-form))
             (if final-form
-                (let* ((result (eval final-form)))
+                (let* ((fun (list 'lambda ewo-template-vars final-form))
+                       (args (mapcar (lambda (v) (symbol-value v)) ewo-template-vars))
+                       (result (apply fun args)))
                   (setq fstring (concat
                                  (substring fstring 0 (- start 6)) ; jq avant <lisp>
                                  result
@@ -1047,7 +1049,8 @@ Return output file name."
   (interactive)
   (save-excursion
     (ewo-gen-project-alist)
-    (org-publish "website")))
+    (org-publish "website")
+    (message "ewo publishing complete")))
 
 
 (provide 'ox-ewo)
