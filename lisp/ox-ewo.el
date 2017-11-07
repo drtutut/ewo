@@ -84,6 +84,29 @@
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-configurations
+  '(("default"
+     :root-dir "~/Documents/www/MonSite/org"
+     :publish-dir "~/public_html"))
+  "Association list of alternative configurations for ewo. The
+CAR of each element of the alist is a string, uniquely
+identifying the configuration. the CDR of each element is a well
+formed property list with an event number of elements,
+alternating keys and values, which specifies the configuration
+values. The possible configuration values are:
+
+    `:root-dir' 
+
+    Root directory of the org-source of the website.
+
+    `:publish-dir'
+
+    The publishing directory of the website."
+  :group 'ewo
+  :type '(alist 
+	  :key-type string  
+	  :value-type plist))
+
 (defcustom ewo-root-dir "~/Documents/www/MonSite/org"
   "The root of the org-source of the website."
   :group 'ewo
