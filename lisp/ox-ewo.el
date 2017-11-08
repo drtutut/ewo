@@ -107,17 +107,6 @@ values. The possible configuration values are:
 	  :key-type string  
 	  :value-type plist))
 
-;;; obsoleted by new configuration system
-;; (defcustom ewo-root-dir "~/Documents/www/MonSite/org"
-;;   "The root of the org-source of the website."
-;;   :group 'ewo
-;;   :type 'directory)
-
-;; (defcustom ewo-publish-dir "~/public_html"
-;;   "The publishing directory."
-;;   :group 'ewo
-;;   :type 'string)
-
 (defcustom ewo-categories
   '(("teaching"
      :label "Teaching"
@@ -292,9 +281,9 @@ No transformation is performed on internal links.
 		 (const :tag "Span" 'span)
 		 (const :tag "None" nil)))
 
-;; root dir of the currently published site.
-;; only valid during the publication process
-(defvar ewo:current-root nil)
+(defvar ewo:current-root nil
+  "root dir of the currently published site.
+only valid during the publication process")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -1074,29 +1063,17 @@ Return output file name."
 				      "html"))
 		      plist pub-dir))
 
-;;; Obsoleted by new configuration system
-;; ;; main entry point ! 
-;; (defun ewo-publish ()
-;;   "Publish the currently defined website."
-;;   (interactive)
-;;   (save-excursion
-;;     (ewo-gen-project-alist)
-;;     (org-publish "website")
-;;     (message "ewo publishing complete")))
-
 ;; main entry point ! 
 ;;;###autoload
 (defun ewo-publish (config)
-  "Publish the specified website."
+  "Publish the specified website. Config is a configuration id."
   (interactive
    (list (completing-read (format "Config to publish (%s) :"
                                   (mapconcat #'(lambda (var) (car var))
                                              ewo-configurations "/"))
                           (mapcar #'(lambda (var) (car var)) ewo-configurations)
                           nil t nil nil (car (car ewo-configurations)))))
-  (message "config: %s" config)
   (let ((config-props (cdr (assoc config ewo-configurations))))
-    (message "%s" config-props)
     (if config-props
         (save-excursion
           (let* ((root-dir (plist-get config-props :root-dir))
