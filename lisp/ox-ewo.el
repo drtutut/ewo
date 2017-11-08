@@ -107,15 +107,16 @@ values. The possible configuration values are:
 	  :key-type string  
 	  :value-type plist))
 
-(defcustom ewo-root-dir "~/Documents/www/MonSite/org"
-  "The root of the org-source of the website."
-  :group 'ewo
-  :type 'directory)
+;;; obsoleted by new configuration system
+;; (defcustom ewo-root-dir "~/Documents/www/MonSite/org"
+;;   "The root of the org-source of the website."
+;;   :group 'ewo
+;;   :type 'directory)
 
-(defcustom ewo-publish-dir "~/public_html"
-  "The publishing directory."
-  :group 'ewo
-  :type 'string)
+;; (defcustom ewo-publish-dir "~/public_html"
+;;   "The publishing directory."
+;;   :group 'ewo
+;;   :type 'string)
 
 (defcustom ewo-categories
   '(("teaching"
@@ -291,11 +292,16 @@ No transformation is performed on internal links.
 		 (const :tag "Span" 'span)
 		 (const :tag "None" nil)))
 
+;; root dir of the currently published site.
+;; only valid during the publication process
+(defvar ewo:current-root nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Internal functions
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (defun ewo-get-cat-prop (cat prop)
   "Get the property of a category"
@@ -344,18 +350,19 @@ list of categories, CURCAT is the id of the current category, or
 the preamble before if not `nil'."
   (concat (if ewo-html-preamble ewo-html-preamble "") "\n"))
 
-(defun ewo-cat-props (cat)
-"Generate the publication properties for a category CAT."
+(defun ewo-cat-props (cat root publish)
+"Generate the publication properties for a category CAT. The root
+of the project is ROOT and the publishing directory is PUBLISH."
   (let* ((name  (car cat))
 	 (props (cdr cat))
 	 (label (plist-get props :label))
 	 (dir   (plist-get props :directory)))
     (list
      name
-     :base-directory (concat ewo-root-dir "/" dir)
+     :base-directory (concat root "/" dir)
      :base-extension "org"
      :exclude "^\\(.*~\\|^.#.*\\)$"
-     :publishing-directory (concat ewo-publish-dir "/" dir)
+     :publishing-directory (concat publish "/" dir)
      :publishing-function 'ewo-html-publish-to-html
      :recursive t
      :headline-levels 3
@@ -372,20 +379,22 @@ the preamble before if not `nil'."
      :ewo-cat-name name)))
 
 
-(defun ewo-cat-project-alist (catlist)
+(defun ewo-cat-project-alist (catlist root publish)
   "Generate the publication association list for the different
 categories. This list respects the format of
-`org-publish-projetct-alist'.
-
-CATLIST is the list of categories."
+`org-publish-projetct-alist'. The root directory of the project
+is ROOT and the publishing directory is PUBLISH. CATLIST is the
+list of categories."
   (if (not (consp catlist))
       '()
     (cons
-     (ewo-cat-props (car catlist))
-     (ewo-cat-project-alist (cdr catlist)))))
+     (ewo-cat-props (car catlist) root publish)
+     (ewo-cat-project-alist (cdr catlist) root publish))))
 
-(defun ewo-gen-project-alist ()
-  "Project alist generation. Must be called after any modification of :
+(defun ewo-gen-project-alist (root publish)
+  "Project alist generation. Uses the ROOT directory and the PUBLISH directory of the project.
+
+Must be called after any modification of :
 
 - the page head content, or,
 - the postamble content, or,
@@ -399,10 +408,10 @@ function `ewo-publish'."
 	 (list
 	  (list
 	   "orgfiles"
-	   :base-directory ewo-root-dir
+	   :base-directory root
 	   :base-extension "org"
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory ewo-publish-dir
+	   :publishing-directory publish
 	   :publishing-function 'ewo-html-publish-to-html
 	   :headline-levels 3
 	   ;; :style-include-default nil           ; seems to be obsolete
@@ -415,48 +424,48 @@ function `ewo-publish'."
 	   :html-preamble 'ewo-html-nav
 	   :html-postamble ewo-html-postamble
            :ewo-cat-name nil))
-	 (ewo-cat-project-alist ewo-categories)
+	 (ewo-cat-project-alist ewo-categories root publish)
 	 (list
 	  (list
 	   "images"
-	   :base-directory (concat ewo-root-dir "/images")
+	   :base-directory (concat root "/images")
 	   :base-extension "jpg\\|gif\\|png"
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :recursive t
-	   :publishing-directory (concat ewo-publish-dir "/images")
+	   :publishing-directory (concat publish "/images")
 	   :publishing-function 'org-publish-attachment)
 	  
 	  (list 
 	   "css"
-	   :base-directory (concat ewo-root-dir "/css")
+	   :base-directory (concat root "/css")
 	   :base-extension "css\\|map"
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory (concat ewo-publish-dir "/css")
+	   :publishing-directory (concat publish "/css")
 	   :publishing-function 'org-publish-attachment)
 	  
 	  (list
 	   "js"
-	   :base-directory (concat ewo-root-dir "/js")
+	   :base-directory (concat root "/js")
 	   :base-extension "js"
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory (concat ewo-publish-dir "/js")
+	   :publishing-directory (concat publish "/js")
 	   :publishing-function 'org-publish-attachment)
 
 	  (list
 	   "documents"
-	   :base-directory (concat ewo-root-dir "/documents")
+	   :base-directory (concat root "/documents")
 	   :base-extension ewo-doc-extensions
 	   :recursive t
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory (concat ewo-publish-dir "/documents")
+	   :publishing-directory (concat publish "/documents")
 	   :publishing-function 'org-publish-attachment)
 	  
 	  (list
 	   "fonts"
-	   :base-directory (concat ewo-root-dir "/fonts")
+	   :base-directory (concat root "/fonts")
 	   :base-extension "woff2\\|woff\\|ttf\\|svg\\|eot\\|otf\\|pfa"
 	   :exclude "^\\(.*~\\|#.*\\)$"
-	   :publishing-directory (concat ewo-publish-dir "/fonts")
+	   :publishing-directory (concat publish "/fonts")
 	   :publishing-function 'org-publish-attachment)
 
 	  `("website" :components ,(append 
@@ -473,7 +482,7 @@ function `ewo-publish'."
 (defun ewo-get-level (filename)
   "Get file level from root. Used to determine the value of the
 template variable `ewo:catlevel'."
-  (let* ((full-root (expand-file-name ewo-root-dir))
+  (let* ((full-root (expand-file-name ewo:current-root))
 	 (regex (concat full-root  
 			"\\(\\(/[-_a-zA-Z0-9]+\\)+\\)?/[-_a-zA-Z0-9]+\\.org")))
     (if (string-match regex filename)
@@ -1065,16 +1074,44 @@ Return output file name."
 				      "html"))
 		      plist pub-dir))
 
+;;; Obsoleted by new configuration system
+;; ;; main entry point ! 
+;; (defun ewo-publish ()
+;;   "Publish the currently defined website."
+;;   (interactive)
+;;   (save-excursion
+;;     (ewo-gen-project-alist)
+;;     (org-publish "website")
+;;     (message "ewo publishing complete")))
+
 ;; main entry point ! 
 ;;;###autoload
-(defun ewo-publish ()
-  "Publish the currently defined website."
-  (interactive)
-  (save-excursion
-    (ewo-gen-project-alist)
-    (org-publish "website")
-    (message "ewo publishing complete")))
-
+(defun ewo-publish (config)
+  "Publish the specified website."
+  (interactive
+   (list (completing-read (format "Config to publish (%s) :"
+                                  (mapconcat #'(lambda (var) (car var))
+                                             ewo-configurations "/"))
+                          (mapcar #'(lambda (var) (car var)) ewo-configurations)
+                          nil t nil nil (car (car ewo-configurations)))))
+  (message "config: %s" config)
+  (let ((config-props (cdr (assoc config ewo-configurations))))
+    (message "%s" config-props)
+    (if config-props
+        (save-excursion
+          (let* ((root-dir (plist-get config-props :root-dir))
+                 (publish-dir (plist-get config-props :publish-dir)))
+            (if (and root-dir publish-dir)
+                (progn
+                  (message "Publishing ewo config %s, root dir %s, publishing dir %s"
+                           config root-dir publish-dir)
+                  (setq ewo:current-root root-dir)
+                  (ewo-gen-project-alist root-dir publish-dir)
+                  (org-publish "website")
+                  (setq ewo:current-root nil)
+                  (message "ewo publishing complete"))
+              (error "bad ewo config"))))
+      (error "ewo config not found"))))
 
 (provide 'ox-ewo)
 
