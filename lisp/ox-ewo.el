@@ -285,6 +285,12 @@ No transformation is performed on internal links.
   "root dir of the currently published site.
 only valid during the publication process")
 
+(defvar ewo:conf-history nil
+  "history of used configurations (for use in the minibuffer).")
+
+(defvar ewo:last-config nil
+  "last used configuration for publishing.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Internal functions
@@ -1068,11 +1074,15 @@ Return output file name."
 (defun ewo-publish (config)
   "Publish the specified website. Config is a configuration id."
   (interactive
-   (list (completing-read (format "Config to publish (%s) :"
-                                  (mapconcat #'(lambda (var) (car var))
-                                             ewo-configurations "/"))
-                          (mapcar #'(lambda (var) (car var)) ewo-configurations)
-                          nil t nil nil (car (car ewo-configurations)))))
+   (list (let ((default (if (null ewo:conf-history)
+                            (car (car ewo-configurations))
+                          (car ewo:conf-history))))
+           (completing-read (format "Config to publish (%s) [default: %s]: "
+                                    (mapconcat #'(lambda (var) (car var))
+                                               ewo-configurations "/")
+                                    default)
+                            (mapcar #'(lambda (var) (car var)) ewo-configurations)
+                            nil t nil 'ewo:conf-history default))))
   (let ((config-props (cdr (assoc config ewo-configurations))))
     (if config-props
         (save-excursion
