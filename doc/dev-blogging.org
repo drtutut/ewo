@@ -14,17 +14,27 @@
   Other org files in the category are articles. They are freely
   editable.
 
-  These files can contain a section with property HEADNOTE. 
+  These files can contain a section with property ~HEADNOTE~ set to ~t~. 
 
   The ~ewo-blog-publish~ function invoked in a buffer containing a
   file other than =index.org= in a dynamic category:
 
-  - adds a dated header entry in the index.org file (the ~DATE~
-    keyword from the file is used).
+  - adds a dated header entry (or more probably a list item) in the
+    index.org file (the ~DATE~ keyword from the file is used).
   - adds a excerpt of the begining of the file to the generated
-    section in index.org (the HEADNOTE).
-
+    section in index.org (the ~HEADNOTE~).
+  - the two preceding additions are performed only if the article
+    contains a ~EWO_STATE~ keyword with value ~PUBLISHED~
+  - These two additions are performed into a section of =index.org=
+    having a property ~TOC~ set to ~t~.  This job can be performed
+    with the preparation function of the org publishing process.
   
+
+  if the main (top) =index.org= file contains a section with property
+  ~TOC~ set to ~t~, subsection entries (or list items) are added for
+  the 10 more recent articles. These subsections are similar to those
+  in the category indexes.
+
   An article contains the keyword ~EWO_STATE~. This keyword can take
   the following values : ~PUBLISHED~ or ~UNPUBLISHED~. Any value other
   than these two is considered as if ~UNPUBLISHED~ wa used. If the
@@ -39,10 +49,15 @@
     is that, during the export process of index.org, we have to check
     other files.
 
+    Another advantage is that we can use the index generation
+    mechanism of ~org-publish~ to manage a tagging system.
+
 *** cons
 
-** Second scenario
+** CANCELED Second scenario
+   CLOSED: [2018-03-16 ven. 15:39]
 
+   - State "CANCELED"   from              [2018-03-16 ven. 15:39]
    A dynamic category contains an =index.org= file.
 
    Each section containing the property EWO_BLOG_ENTRY is considered
