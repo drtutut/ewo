@@ -251,7 +251,8 @@ specified in FMT."
                                         ; add a link around excerpt ?
       (insert (plist-get (cdr a) :excerpt))
       (newline 2))
-    (save-buffer)))
+    (save-buffer)
+    (kill-buffer)))
 
 
 (defun ewo:gen-blog-index (dir)

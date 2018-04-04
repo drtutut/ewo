@@ -1193,7 +1193,7 @@ Return output file name."
                             (mapcar #'(lambda (var) (car var)) ewo-configurations)
                             nil t nil 'ewo:conf-history default))))
                                         ; reset global blog article list
-  (setq ewo:blog-category-article-list '())
+  (setq ewo:blog-global-article-list '())
   (let ((config-props (cdr (assoc config ewo-configurations))))
     (if config-props
         (save-excursion
