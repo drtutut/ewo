@@ -378,7 +378,6 @@ only valid during the publication process")
   "Build the navigation links to the categories. CATLIST is the
 list of categories, CURCAT is the id of the current category, or
 `nil' if we are processing the home page."
-  (princ "--- build navigation links for categories\n")
   (if (not (consp catlist))
       '()
     (let ((catname 	(car (car catlist)))
@@ -438,10 +437,8 @@ of the project is ROOT and the publishing directory is PUBLISH."
                  :html-postamble ewo-html-postamble
                  :ewo-with-toc t ; generate toc in navbar
                  :ewo-cat-name name)))
-    (princ (format "type: -%S-\n" type))
     (if (equal type 'blog)
         (progn
-          (princ "ok adding preparation function\n")
           (append res (list :preparation-function 'ewo-prepare-blog-publication)))
       res)))
 
@@ -1028,8 +1025,6 @@ by the headline filter `ewo-filter-headline'."
   (let ((cat       (plist-get props :ewo-cat-name)))
     (let* ((flist     (org-publish-get-base-files (cons cat props)))
            (dir     (plist-get props :base-directory)))
-      (princ (format "<cat>%s</cat>\n" cat))
-      (princ (format "<files>\n%s\n</files>" flist))
       (setq ewo:blog-category-article-list '())
       ;; process files
       (dolist (file flist)
@@ -1046,14 +1041,12 @@ by the headline filter `ewo-filter-headline'."
             (save-buffer)
             (kill-buffer)))) 
       ;; generate category index
-      (message "gen category index for dir : %s" dir)
       (setq dbg:lst (copy-tree ewo:blog-category-article-list))
       (ewo:blog-gen-cat-index dir cat))))
 
 (defun ewo-prepare-blog-index (props)
   "Prepares the global index of blog articles"
   (let ((dir (plist-get props :base-directory)))
-    (message "gen blog index for dir : %s" dir)
     (ewo:gen-blog-index dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

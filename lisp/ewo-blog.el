@@ -113,7 +113,6 @@ issue an error."
          (string= fname "index.org"))))
 
 (defun  ewo:create-minimal-cat-index (cat)
-  (message "=== creating minimal index file content")
   (insert (format "#+TITLE: %s / %s" ewo-name cat))
   (newline)
   (insert "#+DATE: " )
@@ -133,10 +132,8 @@ issue an error."
 Returns a pair (buffer . level) where buffer is the buffer of the category index, and
 level is the heading level of the toc in index."
   (let ((idxfile (concat (file-name-as-directory dir) "index.org")))
-    (message "=== finding file %s" idxfile)
     (let* ((exist (file-exists-p idxfile))
            (buf (find-file-noselect idxfile)))
-      (message "=== found file %s" idxfile)
       (set-buffer buf)
       (unless exist
         (ewo:create-minimal-cat-index cat))
@@ -146,7 +143,6 @@ level is the heading level of the toc in index."
               (if (null sres)
                   (progn
                     ;; create section
-                    (message "=== creating index section")
                     (end-of-buffer)
                     (newline 2)
                     (insert "* " ewo-blog-toc-name)
@@ -158,7 +154,6 @@ level is the heading level of the toc in index."
                 (progn
                   ;; clean content, place cursor
                   ;; after properties
-                  (message "=== cleaning index content")
                   (goto-char (car sres))
                   (beginning-of-line)
                                         ; check level
@@ -242,14 +237,11 @@ specified in FMT."
 
 (defun ewo:blog-gen-cat-index (dir cat)
   "Generate category CAT index in directory DIR."
-  (message ">>>BEGIN ewo:blog-gen-cat-index")
   (let* ((info  (ewo:prepare-cat-index-buffer dir cat))
          (buf   (car info))
          (level (cdr info)))
     (set-buffer buf)
-    (message "list of articles in cat %s : \n%s\n" cat ewo:blog-category-article-list)  
     (setq ewo:blog-category-article-list (sort ewo:blog-category-article-list 'ewo:article-compare))
-    (message "sorted list of articles in cat %s : \n%s\n" cat ewo:blog-category-article-list)  
     (dolist (a ewo:blog-category-article-list)
                                         ; for each article
       (insert (format "%s [[file:%s][%s]]"
@@ -265,7 +257,6 @@ specified in FMT."
 
 (defun ewo:gen-blog-index (dir)
   "generate the global blog index"
-  (message ">>>BEGIN ewo:gen-blog-index")
   (let ((info (ewo:prepare-blog-index-buffer dir)))
     (unless (null info)
       (setq ewo:blog-global-article-list (sort ewo:blog-global-article-list 'ewo:article-compare))
