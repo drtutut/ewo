@@ -62,6 +62,8 @@
 (require 'ox)
 (require 'ox-html)
 (require 'ox-publish)
+(require 'ewo-util)
+(require 'ewo-blog)
 
 ;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
 ;; <lisp></lisp> pour vraiment avoir du lexical binding.
@@ -281,6 +283,69 @@ No transformation is performed on internal links.
 		 (const :tag "Span" 'span)
 		 (const :tag "None" nil)))
 
+(defcustom ewo-blog-toc-name "List of articles"
+  "The name of the table of content for a blogging category."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-excerpt-size 80
+  "The size of the excerpt to extract from the headlines of a
+blog article to insert in a table of content."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-blog-toc-entry-format "%date% - %title%"
+  "The format of a toc entry for blogging categories. It is a
+string, which contains special sequences %keyword%, where
+keyword can be:
+
+- `date' : the date of the article
+
+- `title' : the title of the article"
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-last-articles 10
+  "The number of newest articles to put in the global toc."
+  :group 'ewo
+  :type '(restricted-sexp :match-alternatives
+                                        ; positive integers
+                          ((lambda (x) (and (integerp x) (> x 0))))))
+
+(defcustom ewo-blog-toc-date-format "%Y-%m-%d"
+  "Date format in toc headings."
+  :group 'ewo
+  :type 'string)
+
+(defvar ewo:blog-global-article-list '()
+  "The global list of blog articles. It is an association list,
+each element being a pair (uuid . properties), where properties
+is a property list containing the following keys :
+
+- `:date' : the date of the article 
+
+- `:title' : the title of the article 
+
+- `:excerpt' : the excerpt ton include in the toc.
+
+- `:file' : the file containing the article.")
+
+(defvar ewo:blog-category-article-list '()
+  "The list of blog articles in a blog category. It is an association list,
+each element being a pair (uuid . properties), where properties
+is a property list containing the following keys :
+
+- `:date' : the date of the article 
+
+- `:title' : the title of the article 
+
+- `:excerpt' : the excerpt ton include in the toc.
+
+- `:file' : the file containing the article.
+
+This list is automatically cleared at the begining of the
+processing of a new category.")
+
 (defvar ewo:current-root nil
   "root dir of the currently published site.
 only valid during the publication process")
@@ -351,33 +416,40 @@ of the project is ROOT and the publishing directory is PUBLISH."
   (let* ((name  (car cat))
 	 (props (cdr cat))
 	 (label (plist-get props :label))
-	 (dir   (plist-get props :directory)))
-    (list
-     name
-     :base-directory (concat root "/" dir)
-     :base-extension "org"
-     :exclude "^\\(.*~\\|^.#.*\\)$"
-     :publishing-directory (concat publish "/" dir)
-     :publishing-function 'ewo-html-publish-to-html
-     :recursive t
-     :headline-levels 3
-     ;; :style-include-default nil           ; seems to be obsolete
-     :html-head-include-default-style nil ; use this now
-     :section-numbers nil
-     ;; :table-of-contents nil ; seems to be obsolete
-     :with-toc t ; use this now
-     :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
-     :html-head ewo-cat-html-head
-     :html-preamble 'ewo-html-nav
-     :html-postamble ewo-html-postamble
-     :ewo-with-toc t ; generate toc in navbar
-     :ewo-cat-name name)))
+	 (dir   (plist-get props :directory))
+         (type  (plist-get props :type))
+         (res   (list
+                 name
+                 :base-directory (concat root "/" dir)
+                 :base-extension "org"
+                 :exclude "^\\(.*~\\|^.#.*\\)$"
+                 :publishing-directory (concat publish "/" dir)
+                 :publishing-function 'ewo-html-publish-to-html
+                 :recursive t
+                 :headline-levels 3
+                 ;; :style-include-default nil           ; seems to be obsolete
+                 :html-head-include-default-style nil ; use this now
+                 :section-numbers nil
+                 ;; :table-of-contents nil ; seems to be obsolete
+                 :with-toc t ; use this now
+                 :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
+                 :html-head ewo-cat-html-head
+                 :html-preamble 'ewo-html-nav
+                 :html-postamble ewo-html-postamble
+                 :ewo-with-toc t ; generate toc in navbar
+                 :ewo-cat-name name)))
+    (princ (format "type: -%S-\n" type))
+    (if (equal type 'blog)
+        (progn
+          (princ "ok adding preparation function\n")
+          (append res (list :preparation-function 'ewo-prepare-blog-publication)))
+      res)))
 
 
 (defun ewo-cat-project-alist (catlist root publish)
   "Generate the publication association list for the different
 categories. This list respects the format of
-`org-publish-projetct-alist'. The root directory of the project
+`org-publish-project-alist'. The root directory of the project
 is ROOT and the publishing directory is PUBLISH. CATLIST is the
 list of categories."
   (if (not (consp catlist))
@@ -408,6 +480,7 @@ function `ewo-publish'."
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :publishing-directory publish
 	   :publishing-function 'ewo-html-publish-to-html
+           :preparation-function 'ewo-prepare-blog-index
 	   :headline-levels 3
 	   ;; :style-include-default nil           ; seems to be obsolete
 	   :html-head-include-default-style nil ; use this now
@@ -464,8 +537,10 @@ function `ewo-publish'."
 	   :publishing-function 'org-publish-attachment)
 
 	  `("website" :components ,(append 
-				    '("orgfiles" "images" "css" "js" "fonts" "documents")
-				    (ewo-cat-names ewo-categories)))))))
+				    '("images" "css" "js" "fonts" "documents")
+				    (ewo-cat-names ewo-categories)
+                                        ; org files (ie top index) should be last
+                                    '("orgfiles")))))))
 
 
 (defun ewo-int-getlevel (cattree pos)
@@ -942,6 +1017,47 @@ by the headline filter `ewo-filter-headline'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
+;;; Blog publishing functions
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq dbg:lst '())
+
+(defun ewo-prepare-blog-publication (props)
+  "Prepares the publication of a blog category."
+  (let ((cat       (plist-get props :ewo-cat-name)))
+    (let* ((flist     (org-publish-get-base-files (cons cat props)))
+           (dir     (plist-get props :base-directory)))
+      (princ (format "<cat>%s</cat>\n" cat))
+      (princ (format "<files>\n%s\n</files>" flist))
+      (setq ewo:blog-category-article-list '())
+      ;; process files
+      (dolist (file flist)
+        (when (not (ewo:category-indexp file (plist-get props :base-directory)))
+          (let ((buffer (find-file-noselect file)))
+            (set-buffer buffer)
+            (let ((state (ewo:read-org-option "EWO_STATE")))
+              (when (string= state "published")
+                (let* ((date    (ewo:get-buffer-date))
+                       (title   (ewo:get-buffer-title))
+                       (id      (ewo:get-buffer-id))
+                       (excerpt (ewo:get-buffer-excerpt)))
+                  (ewo:add-to-article-lists id date title excerpt file))))
+            (save-buffer)
+            (kill-buffer)))) 
+      ;; generate category index
+      (message "gen category index for dir : %s" dir)
+      (setq dbg:lst (copy-tree ewo:blog-category-article-list))
+      (ewo:blog-gen-cat-index dir cat))))
+
+(defun ewo-prepare-blog-index (props)
+  "Prepares the global index of blog articles"
+  (let ((dir (plist-get props :base-directory)))
+    (message "gen blog index for dir : %s" dir)
+    (ewo:gen-blog-index dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
 ;;; Main translation funtions  
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1083,6 +1199,8 @@ Return output file name."
                                     default)
                             (mapcar #'(lambda (var) (car var)) ewo-configurations)
                             nil t nil 'ewo:conf-history default))))
+                                        ; reset global blog article list
+  (setq ewo:blog-category-article-list '())
   (let ((config-props (cdr (assoc config ewo-configurations))))
     (if config-props
         (save-excursion

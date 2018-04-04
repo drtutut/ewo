@@ -7,41 +7,44 @@
   
 ** First scenario
 
-  A dynamic category contains an =index.org= file. Only the first
-  section of this file is freely editable. Next sections are generated
-  by the EWO system.
+  A dynamic category contains an =index.org= file. The user can freely
+  create any number of sections in this file, but ewo will manage
+  itself (or create) the section with property ~EWO_TOC~ set to ~t~.
 
   Other org files in the category are articles. They are freely
   editable.
 
-  These files can contain a section with property ~HEADNOTE~ set to ~t~. 
+  These files can contain a block ~ewo_head~. It will be treated as an
+  introductory paragraph.
 
   The ~ewo-blog-publish~ function invoked in a buffer containing a
   file other than =index.org= in a dynamic category:
 
   - adds a dated header entry (or more probably a list item) in the
-    index.org file (the ~DATE~ keyword from the file is used).
+    index.org file (the ~#+DATE:~ keyword from the file is used, along
+    with the ~#+TITLE:~).
   - adds a excerpt of the begining of the file to the generated
-    section in index.org (the ~HEADNOTE~).
+    section in index.org (the ~ewo_head~). The length of this except
+    can be parametrized.
   - the two preceding additions are performed only if the article
-    contains a ~EWO_STATE~ keyword with value ~PUBLISHED~
+    contains an ~#+EWO_STATE:~ keyword with value ~published~
   - These two additions are performed into a section of =index.org=
-    having a property ~TOC~ set to ~t~.  This job can be performed
+    having a property ~EWO_TOC~ set to ~t~.  This job can be performed
     with the preparation function of the org publishing process.
   
 
   if the main (top) =index.org= file contains a section with property
-  ~TOC~ set to ~t~, subsection entries (or list items) are added for
-  the 10 more recent articles. These subsections are similar to those
-  in the category indexes.
+  ~EWO_TOC~ set to ~t~, subsection entries (or list items) are added
+  for the 10 more recent articles. These subsections are similar to
+  those in the category indexes.
 
-  An article contains the keyword ~EWO_STATE~. This keyword can take
-  the following values : ~PUBLISHED~ or ~UNPUBLISHED~. Any value other
-  than these two is considered as if ~UNPUBLISHED~ wa used. If the
-  ~EWO_STATE~ keyword is missing, the exporter behaves as if
-  ~UNPUBLISHED~ was specified.
+  An article contains the keyword ~#+EWO_STATE:~. This keyword can take
+  the following values : ~published~ or ~unpublished~. Any value other
+  than these two is considered as if ~unpublished~ wa used. If the
+  ~#+EWO_STATE:~ keyword is missing, the exporter behaves as if
+  ~unpublished~ was specified.
 
-  During export, only ~PUBLISHED~ articles are published.
+  During export, only ~published~ articles are published.
 
 *** pros
 
@@ -98,4 +101,123 @@
   
 
   
+
+* Details of implementation
+
+** blogging categories
+
+   blogging categories are distinguished from static categories by the
+   property ~:type~ in the ~ewo-categories~ variable. For a static
+   category the value of the property ~:type~ is ~static~, and for a
+   blogging category the value is ~blog~.
+
+** the project alist
+
+   When generating the project alist, blogging categories will have a
+   ~:preparation-function~ property set to ~ewo-prepare-blog-publish~,
+   which is a function. This function has a single parameter: the
+   project property list.
+
+** the preparation function for a category
+
+    It performs the following work :
+
+   - iterate over each directory, from the ~:base-directory~ and down
+     if ~:recursive~ is ~t~ (which should be the case), and for each
+     file matching the ~:base-extension~ (which should be ~org~), do
+     the following (note that this work can be performed by the
+     ~org-publish-get-base-files~ function) :
+     1. Check the file for the option keyword ~#+EWO_STATE:~
+        - if it is not present, ignore the file
+        - if it is present and its value is not ~published~, ignore the file
+     2. Get the value of keywords ~#+TITLE:~ and ~#+DATE:~. If the
+        ~#+DATE:~ is not present, add it with the current date, and
+        issue a warning message.
+     3. Get the value of the ~#+EWO_ARTICLE_ID:~ keyword. If it does
+        not exist create it and generate a unique ID (add a dependency
+        to uuidgen package).
+     4. Get the [[ewo-excerpt-size][~ewo:excerpt-size~]] first characters of the first block
+        ~#+BEGIN_ewo_head~\dots ~#+END_ewo_head~ if it exist.
+     5. store the UUID, date, title excerpt in a global collection
+        which can be iterated in chronological order. (see variable
+        [[ewo/blog-global-article-list][~ewo:blog-global-article-list~]])
+   - and then :
+     1. try to open the ~index.org~ for the category
+        - if it doesn't exist, create it with minimal info. See
+          [[#mini-index-blog][minimal =index.org= for a blogging category]] for more info on
+          that.
+     2. look for a heading containing the ~HTML_CONTAINER_CLASS~
+        property with value ~ewo-toc~, if it doesn't exist create it,
+        with name [[ewo-blog-toc-name][~ewo:blog-toc-name~]] if it exists, empty it.
+     3. If the heading have a ~HTML_CONTAINER_CLASS~ property, add
+        ~ewo-toc~ to it. If it doesn't have one, add the property and
+        set the value to ~ewo_toc~.
+     4. iterate over the global collection of articles
+        (~ewo:blog-global-article-list~). For each element :
+        a. Add a subheading.The content of the headline is defined by
+           the variable [[ewo-blog-toc-entry-format][~ewo:blog-toc-entry-format~]]. The content of
+           the section is the excerpt previously extracted (if
+           available).
+
+** the preparation function for the global index 
+
+   - check for the existence of a global index file. 
+   - position the cursor in the global index file at the begining of
+     the heading containing ~HTML_CONTAINER_CLASS~ property with value
+     ~ewo-toc~. If it doesn't exist, give up (no index creation). If
+     it exist, clean it, i.e. remove entries.
+   - iterate on the first [[ewo-last-articles][~ewo-last-articles~]] articles, and, for each
+     article, create an entry similar to the one generated for the
+     category toc.
+   - save modified buffers.
+     
+** DONE minimal =index.org= for a blogging category
+   CLOSED: [2018-03-23 ven. 07:42]
+   :PROPERTIES:
+   :CUSTOM_ID: mini-index-blog
+   :END:
+
+   #+BEGIN_SRC org
+     ,#+TITLE: site name / category name
+     ,#+DATE: <2018-03-22 jeu.>
+
+
+     ,* Published so far
+       :PROPERTIES:
+       :HTML_CONTAINER_CLASS: ewo-toc
+       :END:
+   #+END_SRC
+   
+** publishing process
+
+*** TODO how to avoid publication of non published articles ? 
+
+    Does-it implies a new version of the publishing function ?
+    Probably, but it mays not be so hard.
+ 
+* new custom vars
+
+  - ~ewo-blog-toc-name~ :: <<ewo-blog-toc-name>> The name of the table
+       of contents for a blogging category.
+  - ~ewo-excerpt-size~ :: <<ewo-excerpt-size>>size of the excerpt to extract from the head
+       lines of a blog article to insert it in a table of content.
+  - ~ewo-blog-toc-entry-format~ :: <<ewo-blog-toc-entry-format>> the
+       format of a toc entry for blogging categories. It is a string,
+       which contains special sequences ~%keyword%~, where ~keyword~
+       can be:
+    + ~date~ : the date of the article
+    + ~title~ : the title of the article
+  - ~ewo-last-articles~ :: <<ewo-last-articles>> The number of newest
+       articles to put in the global toc.
+      
+      
+* new internal global vars
+
+  - ~ewo:blog-global-article-list~ :: <<ewo/blog-global-article-list>>
+       The global list of blog articles. Each entry containsthe UUID,
+       date, title and excerpt of the article. It must be iterated in
+       chronological order.
+
+* Task list
+** TODO Add a dependency to the uuidgen package
 
