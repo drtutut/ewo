@@ -4,7 +4,7 @@
 
 * Introduction
 
-  This is EWO 2.1
+  This is EWO 3.0
 
   EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
@@ -24,13 +24,15 @@
   Version 2.0 is a partial rewrite of the original project, to define
   EWO as a derived back-end of the org html back-end.
 
+  Version 3.0 introduces blogging categories.
+
 * Installation
 
   Add the directory of ewo lisp files to the =load-path= variable. For
   example :
 
   #+BEGIN_SRC emacs-lisp
-    (add-to-list 'load-path "~/local/emacs-lisp/ewo-2.0beta")
+    (add-to-list 'load-path "~/local/emacs-lisp/ewo-3.0beta")
   #+END_SRC
   
   Org mode should be loaded :
@@ -53,7 +55,12 @@
   Customize the variable =org-export-backends= and add the =ewo=
   backend to it.
 
-  You should be done. Go to the new section to start a new website.
+  Note that EWO relies on the following emacs packages, all available
+  via elpa :
+  - cl-lib
+  - uuidgen
+
+  You should be done. Go to the following section to start a new website.
 
 * Starting a fresh project
 
@@ -84,8 +91,7 @@
 
    This variable contains the full path of the directory containing
    the org files containing the pages of your future site, along with
-   the auxiliary files like css stylesheets, javascript files, images
-   ...
+   the auxiliary files like css stylesheets, javascript files, images\dots
 
 ** variable =ewo-publish-dir=
 
@@ -106,8 +112,21 @@
    - =:icon= property :: this is an optionnal property giving the name
         of an icon as it is named in the glyphicon system of the
         bootstrap framework (see example below)
-   - =:type= ::  this is a category type which, at the time being, has
-        only one value, namely the atom =static=.
+   - =:type= ::  this is a category type which can be :
+     + =static= :: a static category, that is, a freely organizable
+                   subtree of org documents, each one generating a
+                   HTML page. The only mandatory file is =index.org=
+                   which must be present in the category
+                   directory. [[#dcad7a4d-c1a9-4ad3-872e-864b247317f2][More on static categories]]
+     + =blog= :: a blogging category. The file =index.org= is
+                 mandatory in the directory tree. The user can freely
+                 edit this file, but it has to contain a section
+                 heading with a =HTML_CONTAINER_CLASS= multivalued
+                 property containing the ~ewo-toc~ class. It will
+                 contain the table of content of the category
+                 (automatically generated). Other org files in the
+                 subtree are articles, which will be published under
+                 certain conditions. [[#d4d360f0-db39-4814-9f70-b3097834153c][More on blogging categories]]
 
 ** variable =ewo-navbar-class=
 
@@ -201,8 +220,46 @@
         the specified class.
    - =nil= :: No transformation is performed on internal links.
 
-** Example
+** variable =ewo-blog-toc-name=
 
+   The name of the table of content for a blogging category (a string)
+
+** variable =ewo-excerpt-size=
+   :PROPERTIES:
+   :CUSTOM_ID: 5fbac1b0-957c-4a6c-998b-136265f83ec6
+   :END:
+
+   The size of the excerpt to extract from the headlines of a blog
+   article to insert in a table of content.
+
+** variable =ewo_blog-toc-entry-format=
+   :PROPERTIES:
+   :CUSTOM_ID: ba2eeced-28a9-4696-ac8b-8e4f56e76762
+   :END:
+
+   The format of a toc entry for blogging categories. It is a
+   string, which contains special sequences ~%keyword%~, where
+   keyword can be:
+
+   - =date= : the date of the article
+   - =title= : the title of the article
+
+** variable =ewo-last-articles=
+   :PROPERTIES:
+   :CUSTOM_ID: 8fabe310-5010-4e0f-bcdd-06e2b25c5922
+   :END:
+
+   The number of newest articles to put in the global toc.
+
+** variable =ewo-blog-toc-date-format=
+
+   Date format in toc headings.
+
+** Example
+   :PROPERTIES:
+   :CUSTOM_ID: 6fefa485-7152-4af4-b761-3f19ee2ee44f
+   :END:
+   
 #+BEGIN_SRC emacs-lisp
   (defvar ewo-name "Retry/Abort")
   (defvar ewo-root-dir "~/Documents/www/MySite/org")
@@ -217,21 +274,30 @@
        :label "Research"
        :directory "Research"
        :icon "eye-open"
-       :type static)))           
+       :type static)
+      ("news"
+       :label "News"
+       :directory "News"
+       :icon "pencil"
+       :type blog)))           
 #+END_SRC
 
   This configuration defines a site whose name is "Retry/Abort", whose
   local root directory is =~/Documents/www/MySite/org= and whose
   publishing directory is =~/public_html=.
 
-  There are two categories in this project, a teaching category and a
-  research category. The teaching category will be labeled "Teaching"
-  and its subdirectory will be
-  =~/Documents/www/MySite/org/Teaching=. It will use the glyphicon
-  =glyphicon-education= as an icon. The research category will be
-  labeled "Research" and its subdirectory will be
-  =~/Documents/www/MySite/org/Research=. It will use the glyphicon
-  =glyphicon-eye-open= as an icon.
+  There are three categories in this project :
+  - two static categories : a teaching category and a research
+    category. The teaching category will be labeled "Teaching" and its
+    subdirectory will be =~/Documents/www/MySite/org/Teaching=. It
+    will use the glyphicon =glyphicon-education= as an icon. The
+    research category will be labeled "Research" and its subdirectory
+    will be =~/Documents/www/MySite/org/Research=. It will use the
+    glyphicon =glyphicon-eye-open= as an icon.
+  - a blog category : it will be labelled "News" and will be rooted in
+    =~/Documents/www/MySite/org/News=. It will use the glyphicon
+    =glyphicon-pencil=.
+
 * Site structure 
   :PROPERTIES:
   :CUSTOM_ID: SiteStructure
@@ -275,11 +341,11 @@
    not customize the =ewo-html-head= and the =ewo-cat-html-head=, see
    below) :
    - =html5shiv.min.js= :: javascript needed by bootstrap (for IE8) 
-   - =respond.min.je= :: javascript needed by bootstrap (for IE8) 
+   - =respond.min.js= :: javascript needed by bootstrap (for IE8) 
 
 ** the =fonts= directory
 
-   Should contain a minimal the glyphicons font for bootstrap.
+   Should contain the glyphicons font for bootstrap.
 
 ** the =images= directory
 
@@ -289,6 +355,160 @@
 
    There are no requirements in this directory. You should put the
    documents linked to the pages of your site here.
+
+** Example
+
+   Going back to [[#6fefa485-7152-4af4-b761-3f19ee2ee44f][this example]], the structure of the site is :
+   #+BEGIN_EXAMPLE
+   ~/Documents/www/MySite/org +-- Teaching
+                              |
+                              +-- Research
+                              |
+                              +-- News
+	                      |
+	                      +-- css
+	                      |
+	                      +-- fonts
+	                      |
+	                      +-- js
+	                      |
+	                      +-- images
+	                      |
+	                      \-- documents
+   #+END_EXAMPLE
+
+* Static categories
+  :PROPERTIES:
+  :CUSTOM_ID: dcad7a4d-c1a9-4ad3-872e-864b247317f2
+  :END:
+  
+  In a static category, the only mandatory file is =index.org=.  The
+  remaining files are totally under your responsability. All the
+  remaining files should be org files. Only org files will be
+  published. SThis means that, if your pages need extra files, like
+  images or additionnal documents, these files must be present in the
+  subtrees rooted in =documents= and =images= directories.
+
+  Providing the navigation links from =index.org= to other org files
+  in the category is under your responsability.
+
+* Blogging categories
+  :PROPERTIES:
+  :CUSTOM_ID: d4d360f0-db39-4814-9f70-b3097834153c
+  :END:
+  
+  In a blogging category, the only mandatory file is =index.org=. Its
+  content is free, but it should contain a headline with property
+  ~HTML_CONTAINER_CLASS~. This property must contain at least a value
+  ~ewo-toc~, indicating that the table of content of this category
+  will be generated under this headline. All other org files are articles.
+
+** Articles
+   :PROPERTIES:
+   :CUSTOM_ID: 1c6e6e19-535d-44f2-944a-2606affada4d
+   :END:
+
+   Any org file in a blogging category, appart from =index.org=, is an
+   article.  Articles must have a ~TITLE~ keyword and a ~DATE~
+   keyword. The ~DATE~ must be an org timestamp. 
+
+   An article should have an ~EWO_STATE~ keyword. This keyword accept
+   two values : ~published~ and ~unpublished~. A ~published~ article
+   will be included in the [[#3e75920b-7458-40a8-8050-2add6f4d959f][table of content of the category]], and in
+   the [[#3ab41567-c4b8-41b1-b621-ab50c1a76d8d][last articles list]] of the global =index.org= file of the site,
+   if this feature is requested. If the value of ~EWO_STATE~ is
+   different from published, or if the ~EWO_STATE~ keyword is not
+   present, the article will not appear in the table of content, nor
+   in the las articles list. Note that in all cases, /the html page
+   corresponding to this org file will be generated/. If you do not
+   want the content of this article to be published use the ~COMMENT~
+   or ~noexport~ feature from org.
+
+   The body of articles can contain a block =ewo_head=, representing
+   the head material (headlines) of the article. If it is present:
+   - It will generate a ~<div class="ewo_head">~, which can then be customized
+     in the =mystyle.css= file.
+   - the generation process of the table of content and last article
+     list will extract the begining of this block. This excerpt will
+     be included in the table of content of the category and in the
+     global list of last articles. The length of this excerpt can be
+     customized with the [[#5fbac1b0-957c-4a6c-998b-136265f83ec6][=ewo-excerpt-size=]] variable.
+
+     
+   During the table of content generation process, EWO will add a
+   ~EWO_ARTICLE_ID~ to each article, with a UUID as value.
+
+** Table of content of a blogging category
+   :PROPERTIES:
+   :CUSTOM_ID: 3e75920b-7458-40a8-8050-2add6f4d959f
+   :END:
+
+   A table of content (toc) of all articles in a blogging category is
+   automatically generated by EWO in the =index.org= file present at
+   the root of the category.
+
+   The toc is generated under a headline having the property
+   ~HTML_CONTAINER_CLASS~ containing a value ~ewo-toc~. Note that it
+   means that the enclosing ~<div>~ of the toc has the class
+   ~ewo-toc~, which allows you to customize the appearence of elements
+   present it.
+
+   If there is no headline containing the ~HTML_CONTAINER_CLASS~
+   property with the expected value, EWO will create one, and will
+   name it "Published so far". It will have a level of 1. If there is
+   no =index.org= in the category, ir will create a minimal one (with
+   a ~TITLE~, a ~DATE~, and a toc headline).
+
+   If the toc headline is at level ~n~, then the entries in the toc
+   will be at level ~n+1~.
+
+   Each [[#1c6e6e19-535d-44f2-944a-2606affada4d][published article]] has an associated entry in the toc.
+
+   Each entry headline is formated using the [[#ba2eeced-28a9-4696-ac8b-8e4f56e76762][=ewo_blog-toc-entry-format=]]. 
+
+   The body of each entry consists in an excerpt of the ~ewo_head~
+   block in the article if it exists. The size of the excerpt can be
+   customized with the variable [[#5fbac1b0-957c-4a6c-998b-136265f83ec6][=ewo-excerpt-size=]].
+
+   The toc is sorted in reverse chronological order. The date used is
+   the date present in the ~DATE~ keyword of articles.
+
+** List of last articles in the global index
+   :PROPERTIES:
+   :CUSTOM_ID: 3ab41567-c4b8-41b1-b621-ab50c1a76d8d
+   :END:
+
+   A list of last published articles can be generated in the
+   =index.org= file of the website. To request this generation, add a
+   headline in =index.org= with the property ~HTML_CONTAINER_CLASS~
+   property containing the value ~ewo-toc~. Note that this means that
+   the enclosing ~<div>~ of the toc has the class ~ewo-toc~, which
+   allows you to customize the appearence of elements present it.
+
+   All ublished blog articles in all blogging categories are
+   considered for this list. This does not mean that all these
+   articles will be present in the list, see below.
+
+   If there is no headline containing the ~HTML_CONTAINER_CLASS~
+   property with the expected value, EWO will not generate it.
+
+   If the toc headline is at level ~n~, then the entries in the toc
+   will be at level ~n+1~.
+
+   Only the last [[#8fabe310-5010-4e0f-bcdd-06e2b25c5922][=ewo-last-articles=]] [[#1c6e6e19-535d-44f2-944a-2606affada4d][published articles]] will have an
+   associated entry in this list.
+
+   Each entry headline is formated using the
+   [[#ba2eeced-28a9-4696-ac8b-8e4f56e76762][=ewo_blog-toc-entry-format=]].
+
+   The body of each entry consists in an excerpt of the ~ewo_head~
+   block in the article if it exists. The size of the excerpt can be
+   customized with the variable [[#5fbac1b0-957c-4a6c-998b-136265f83ec6][=ewo-excerpt-size=]].
+
+   The list of last articles is sorted in reverse chronological
+   order. The date used is the date present in the ~DATE~ keyword of
+   articles.
+
 * Deeper customization
 ** the ~<lisp></lisp>~ mechanism
 
@@ -297,20 +517,32 @@
    These constructs allows you to call lisp functions to produce a
    textual result which is then substituted to the <lisp></lisp>
    construct. Actually, you cannot execute any lisp expression,
-   because it would be a *monstruous* security hole. The list
-   expression should be a functionn call, and the arguments of the
-   function (if any) should be variables. Moreover, the function and
-   the variables must be members of /authorization lists/ :
+   because it would be a *monstruous* security hole. The lisp
+   expression should be :
+   - a functionn call. Each argument should be in turn an authorized
+     expression.
+   - a variable
+   - a constant
+   Moreover, the function and the variables must be members of
+   /authorization lists/ :
 
    - =ewo-template-funcs= :: List of authorized functions for =<lisp>=
-        constructs. Initially contains the =ewo-rootlink= function,
-        which generates an up link to root of the site depending on
-        LEVEL parameter
+        constructs. Initially contains 
+     + the =ewo-rootlink= function, which generates an up link to root
+       of the site depending on LEVEL parameter.
+     + arithmetic functions : ~+~, ~-~, ~*~, ~/~, ~%~, ~mod~,
+     + ~1+~ and ~1-~ incrementing and decrementing operators.
+     + ~quote~ function.
    - =ewo-template-vars= :: List of authorized variables for ~<lisp>~
-        constructs. Initially contains the variable ~ewo:catlevel~,
-        which contains the category level in the context of the
-        call. Note that this is NOT a a global variable. Its binding
-        is local to the ~<lisp>~ construct machinery to keep it safe.
+        constructs. Initially contains :
+     + the variable ~ewo:catlevel~, which contains the category level
+       in the context of the call. Note that this is NOT a a global
+       variable. 
+     + the variable ~ewo:catname~, which contains the category name in
+       the context of the call.
+
+   The binding of variables is local to the ~<lisp>~ construct
+   machinery to keep it safe.
 
    For now there is no clear documentation on how to extend this
    mechanism (adding functions or args). If you whish to add you own
