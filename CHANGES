@@ -9,3 +9,8 @@ Version 2.1
             communication channel of the back-end
         - new variable `ewo-home-name' to hold the name of the home
           page (for the navigation bar)
+
+Version 3.0
+===========
+
+        - added blogging categories
