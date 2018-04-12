@@ -63,12 +63,15 @@
 ;;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(require 'avl-tree)
+
 (require 'org)
 (require 'ox)
 (require 'ox-html)
 (require 'ox-publish)
 (require 'ewo-util)
 (require 'ewo-blog)
+(require 'ewo-tags)
 
 ;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
 ;; <lisp></lisp> pour vraiment avoir du lexical binding.
@@ -94,7 +97,8 @@
 (defcustom ewo-configurations
   '(("default"
      :root-dir "~/Documents/www/MonSite/org"
-     :publish-dir "~/public_html"))
+     :publish-dir "~/public_html"
+     :with-tags t))
   "Association list of alternative configurations for ewo. The
 CAR of each element of the alist is a string, uniquely
 identifying the configuration. the CDR of each element is a well
@@ -108,7 +112,13 @@ values. The possible configuration values are:
 
     `:publish-dir'
 
-    The publishing directory of the website."
+    The publishing directory of the website.
+
+    `:with-tags'
+
+    If non nil, generate a tags.org file at the root of the
+    site. tags are collected from the FILETAGS keyword in each
+    org file."
   :group 'ewo
   :type '(alist 
 	  :key-type string  
@@ -361,6 +371,14 @@ only valid during the publication process")
 (defvar ewo:last-config nil
   "last used configuration for publishing.")
 
+(defvar ewo:tags (avl-tree-create 'ewo:tagtree-cmpfunc)
+  "The tree of tag references. 
+
+Each element ot the tree consists in a list. the car of this list
+is a string representing a tag. The cdr is a list of
+pairs (filenames . title) (file names are relative to
+`ewo:current-root').")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Internal functions
@@ -442,10 +460,14 @@ of the project is ROOT and the publishing directory is PUBLISH."
                  :html-postamble ewo-html-postamble
                  :ewo-with-toc t ; generate toc in navbar
                  :ewo-cat-name name)))
-    (if (equal type 'blog)
-        (progn
-          (append res (list :preparation-function 'ewo-prepare-blog-publication)))
-      res)))
+    (let ((prepl '()))
+      (when (equal type 'blog)
+        (setq prepl (cons 'ewo-prepare-blog-publication prepl))
+                                        ; TODO perhaps add a global option. Actually : all blog files
+        (setq prepl (cons 'ewo-prepare-tag-collect prepl)))
+      (if (not (null prepl))
+          (append res (list :preparation-function prepl))
+        res))))
 
 
 (defun ewo-cat-project-alist (catlist root publish)
@@ -482,7 +504,25 @@ function `ewo-publish'."
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :publishing-directory publish
 	   :publishing-function 'ewo-html-publish-to-html
-           :preparation-function 'ewo-prepare-blog-index
+           :preparation-function '(ewo-prepare-blog-index ewo-prepare-tag-files)
+	   :headline-levels 3
+	   ;; :style-include-default nil           ; seems to be obsolete
+	   :html-head-include-default-style nil ; use this now
+	   :section-numbers nil
+	   ;; :table-of-contents nil       ; seems to be obsolete
+           :with-toc t ; use this now
+	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
+	   :html-head ewo-html-head
+	   :html-preamble 'ewo-html-nav
+	   :html-postamble ewo-html-postamble
+           :ewo-cat-name nil)
+          (list
+           "tagfiles"
+           :base-directory (concat root "/tags")
+	   :base-extension "org"
+	   :exclude "^\\(.*~\\|#.*\\)$"
+	   :publishing-directory (concat publish "/tags")
+	   :publishing-function 'ewo-html-publish-to-html
 	   :headline-levels 3
 	   ;; :style-include-default nil           ; seems to be obsolete
 	   :html-head-include-default-style nil ; use this now
@@ -541,8 +581,8 @@ function `ewo-publish'."
 	  `("website" :components ,(append 
 				    '("images" "css" "js" "fonts" "documents")
 				    (ewo-cat-names ewo-categories)
-                                        ; org files (ie top index) should be last
-                                    '("orgfiles")))))))
+                                        ; org files (ie top index) and tags should be last
+                                    '("orgfiles" "tagfiles")))))))
 
 
 (defun ewo-int-getlevel (cattree pos)
@@ -1050,10 +1090,49 @@ by the headline filter `ewo-filter-headline'."
       (ewo:blog-gen-cat-index dir cat))))
 
 (defun ewo-prepare-blog-index (props)
-  "Prepares the global index of blog articles"
+  "Prepares the global list of blog articles"
   (let ((dir (plist-get props :base-directory)))
     (ewo:gen-blog-index dir)))
 
+(defun ewo-prepare-tag-collect (props)
+  "Collect TAG keyword content in file, and add it to the global
+collection. see `ewo-tags' variable for the structure of the
+collection."
+
+  (let ((flist (org-publish-get-base-files (cons "orgfiles" props)))
+        (dir   (plist-get props :base-directory)))
+    (dolist (file flist)
+      (when (not (ewo:category-indexp file (plist-get props :base-directory)))
+;;        (message "collecting file tags for file %s" file)
+        (let ((buffer (find-file-noselect file)))
+          (set-buffer buffer)
+          (let ((tags-raw (ewo:read-org-option "FILETAGS"))
+                (title    (ewo:read-org-option "TITLE"))
+                (pub      (ewo:read-org-option "EWO_STATE")))
+;;            (message "EWO_STATE : *%s*" pub)
+            (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
+;;              (message "FILETAGS: %s " tags-raw)
+;;              (message "TITLE: %s " title)
+              (nlet loop ((tags (split-string tags-raw ":" t)))
+                (unless (null tags)
+                  (ewo:add-to-tag-map (car tags) title (file-relative-name file ewo:current-root))
+                  (loop (cdr tags))))))
+          (save-buffer)
+          (kill-buffer))))))
+
+(defun ewo-prepare-tag-files (props)
+  "Generate the tags.org file and the index files for each tag
+from the `ewo:tags' tree."
+  (ewo:clean-tag-files) ; TODO
+  (let* ((filename (expand-file-name "tags.org" ewo:current-root))
+         (buffer (find-file-noselect filename)))
+    (set-buffer buffer)
+    (erase-buffer)
+    (ewo:tagfile-header)
+    (ewo:tagfile-content)
+    (save-buffer)
+    (kill-buffer)))
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Main translation funtions  
@@ -1199,6 +1278,8 @@ Return output file name."
                             nil t nil 'ewo:conf-history default))))
                                         ; reset global blog article list
   (setq ewo:blog-global-article-list '())
+                                        ; clear tag tree
+  (avl-tree-clear ewo:tags)
   (let ((config-props (cdr (assoc config ewo-configurations))))
     (if config-props
         (save-excursion

@@ -24,10 +24,10 @@
 ;;; This file contains utility functions.
 (require 'cl-lib)
 
-;; named let (fron scheme !)
+;; named let (fron scheme !) is so cool.
 (defmacro nlet (name bindings &rest body)
   "The so cool \"named let\" construct borrowed from scheme. It
-  avoids a lot of horrible while loops."
+  avoids a lot of horrible while loops with side effects."
   (declare (indent 2))
   `(cl-labels ((,name ,(mapcar 'car bindings)
                       ,@body))
