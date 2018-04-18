@@ -132,54 +132,54 @@ Returns a pair (buffer . level) where buffer is the buffer of the category index
 level is the heading level of the toc in index."
   (let ((idxfile (concat (file-name-as-directory dir) "index.org")))
     (let* ((exist (file-exists-p idxfile))
-           (buf (find-file-noselect idxfile)))
-      (set-buffer buf)
-      (unless exist
-        (ewo:create-minimal-cat-index cat))
-      (goto-char (point-min))
-      (cons buf
-            (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}}")))
-              (if (null sres)
+           (visiting (find-buffer-visiting idxfile))
+           (buf (or visiting (find-file-noselect idxfile))))
+      (with-current-buffer buf
+        (unless exist
+          (ewo:create-minimal-cat-index cat))
+        (goto-char (point-min))
+        (cons buf
+              (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}}")))
+                (if (null sres)
+                    (progn
+                                        ; create section
+                      (end-of-buffer)
+                      (newline 2)
+                      (insert "* " ewo-blog-toc-name)
+                      (beginning-of-line)
+                      (org-entry-add-to-multivalued-property (point) "HTML_CONTAINER_CLASS" "ewo-toc")
+                      (end-of-buffer)
+                      (newline)
+                      1)
                   (progn
-                    ;; create section
-                    (end-of-buffer)
-                    (newline 2)
-                    (insert "* " ewo-blog-toc-name)
+                                        ; clean content, place cursor
+                                        ; after properties
+                    (goto-char (car sres))
                     (beginning-of-line)
-                    (org-entry-add-to-multivalued-property (point) "HTML_CONTAINER_CLASS" "ewo-toc")
-                    (end-of-buffer)
-                    (newline)
-                    1)
-                (progn
-                  ;; clean content, place cursor
-                  ;; after properties
-                  (goto-char (car sres))
-                  (beginning-of-line)
                                         ; check level
-                  (re-search-forward "\\(\\*+\\)\\s-" nil t)
-                  (let ((level (length (match-string-no-properties 1 nil))))
+                    (re-search-forward "\\(\\*+\\)\\s-" nil t)
+                    (let ((level (length (match-string-no-properties 1 nil))))
                                         ; forward line exist because
                                         ; of the properties
-                    (re-search-forward ":END:" nil t)
-                    (end-of-line)
+                      (re-search-forward ":END:" nil t)
+                      (end-of-line)
                                         ; clean existing entries
-                    ;; TODO: do this with a search of the next header
-                    ;; of same level (the same for blog index
-                    (let* ((begin (point))
-                           (pos (re-search-forward (concat "^" (make-string level ?*) " ") nil t)))
-                      (beginning-of-line)
-                      (goto-char (if pos (point) (point-max)))
-                      (delete-region begin (point))
-                      (newline 2))
-                    level))))))))
+                      (let* ((begin (point))
+                             (pos (re-search-forward (concat "^" (make-string level ?*) " ") nil t)))
+                        (beginning-of-line)
+                        (goto-char (if pos (point) (point-max)))
+                        (delete-region begin (point))
+                        (newline 2))
+                      level)))))))))
 
 (defun ewo:prepare-blog-index-buffer (dir)
   "Prepare the blog global index rooted in DIR.
 Returns a pair (buffer . level) where buffer is the buffer of the category index, and
 level is the heading level of the toc in index. If there ins no index section in the buffer, "
-  (let ((idxfile (concat (file-name-as-directory dir) "index.org")))
-    (let ((buf (find-file-noselect idxfile)))
-      (set-buffer buf)
+  (let* ((idxfile (concat (file-name-as-directory dir) "index.org"))
+         (visiting (find-buffer-visiting idxfile))
+         (buf      (find-file-noselect idxfile)))
+    (with-current-buffer buf
       (goto-char (point-min))
       (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS=\{ewo-toc}")))
         (if (null sres)
@@ -188,8 +188,8 @@ level is the heading level of the toc in index. If there ins no index section in
               (kill-buffer)
               nil)
           (progn
-            ;; clean content, place cursor
-            ;; after properties
+                                        ; clean content, place cursor
+                                        ; after properties
             (goto-char (car sres))
             (beginning-of-line)
                                         ; check level

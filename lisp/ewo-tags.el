@@ -47,6 +47,8 @@ file."
   (insert "#+DATE: ")
   (org-time-stamp '(16))
   (newline)
+  (insert "#+OPTIONS: toc:nil num:nil")
+  (newline)
   (insert "#+DESCRIPTION: tag index for "
           (if tagname tagname (concat "site " ewo-name)))
   (newline 2))
@@ -63,13 +65,15 @@ current buffer."
 (defun ewo:gen-tagfile (file tag)
   "Generate the tag FILE for TAG."
   (save-excursion
-    (let ((buffer (find-file-noselect file)))
-      (set-buffer buffer)
-      (erase-buffer)
-      (ewo:tagfile-header)
-      (ewo:tagfile-tag-content tag)
-      (save-buffer)
-      (kill-buffer))))
+    (let* ((visiting (find-buffer-visiting file))
+           (buffer (or visiting (find-file-noselect file))))
+      (unwind-protect
+          (with-current-buffer buffer
+            (erase-buffer)
+            (ewo:tagfile-header (car tag))
+            (ewo:tagfile-tag-content tag)
+            (save-buffer))
+        (unless visiting (kill-buffer buffer))))))
 
 (defun ewo:tagfile (tag)
   "computes the filename corresponding to a tag."
@@ -99,7 +103,6 @@ the file corresponding to the tag."
 the files for each tag in the tags directory."
   (let ((stack (avl-tree-stack ewo:tags)))
     (nlet loop ((tag (avl-tree-stack-pop stack)))
-;;      (message "current tag : %s" tag) 
       (unless (null tag)
         (ewo:process-tag tag)
         (loop (avl-tree-stack-pop stack))))))
@@ -108,7 +111,7 @@ the files for each tag in the tags directory."
 (defun ewo:clean-tag-files ()
   "Clean the directory containing tag files. Create it if it does
 not exist."
-  (let ((dir (concat ewo:current-root "/tags")))
+  (let ((dir (concat (plist-get ewo:current-config :root-dir) "/tags")))
     (if (not (file-exists-p dir))
         (make-directory dir) 
       (let ((ls (directory-files dir t)))

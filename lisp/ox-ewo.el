@@ -97,8 +97,7 @@
 (defcustom ewo-configurations
   '(("default"
      :root-dir "~/Documents/www/MonSite/org"
-     :publish-dir "~/public_html"
-     :with-tags t))
+     :publish-dir "~/public_html"))
   "Association list of alternative configurations for ewo. The
 CAR of each element of the alist is a string, uniquely
 identifying the configuration. the CDR of each element is a well
@@ -112,13 +111,7 @@ values. The possible configuration values are:
 
     `:publish-dir'
 
-    The publishing directory of the website.
-
-    `:with-tags'
-
-    If non nil, generate a tags.org file at the root of the
-    site. tags are collected from the FILETAGS keyword in each
-    org file."
+    The publishing directory of the website."
   :group 'ewo
   :type '(alist 
 	  :key-type string  
@@ -233,6 +226,21 @@ be included in the <head></head> section."
   "A string describing the class of the bootstrap navigation bar."
   :group 'ewo
   :type 'string)
+
+(defcustom ewo-navbar-container "container"
+  "A string describing the class of the bootstrap navbar
+container. Usual values are `container' and `container-fluid'."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-navbar-ul "nav navbar-nav navbar-right"
+  "A string describing the class of the bootstrap ul element in a
+  navbar. Usual values are \"nav navbar\" for a left-aligned
+  list, and \"nav navbar navbar-right\" for a right-aligned
+  list."
+  :group 'ewo
+  :type 'string)
+
 
 (defcustom ewo-ext-link-addition "ewoextlink"
   "A string describing the class of external links. To activate
@@ -361,9 +369,8 @@ is a property list containing the following keys :
 This list is automatically cleared at the begining of the
 processing of a new category.")
 
-(defvar ewo:current-root nil
-  "root dir of the currently published site.
-only valid during the publication process")
+(defvar ewo:current-config nil
+  "Current published configuration.")
 
 (defvar ewo:conf-history nil
   "history of used configurations (for use in the minibuffer).")
@@ -372,23 +379,47 @@ only valid during the publication process")
   "last used configuration for publishing.")
 
 (defvar ewo:tags (avl-tree-create 'ewo:tagtree-cmpfunc)
-  "The tree of tag references. 
+  "The tree of tag references.
 
 Each element ot the tree consists in a list. the car of this list
 is a string representing a tag. The cdr is a list of
-pairs (filenames . title) (file names are relative to
-`ewo:current-root').")
+pairs (filenames . title) (file names are relative to the
+`:root-dir' property of the current configuration).")
 
+(defvar ewo:categories nil
+  "The internal table of categories. It contains the content of
+  `ewo-categories', plus ewo internal categories. Actually, the
+  only internal category is the tags category.")
+
+(defvar ewo:internal-categories
+  '(("tags"
+     :directory "tags"
+     :label "Tags"
+     :internal t))
+  "internal categories.")
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Internal functions
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun ewo:build-internal-categories ()
+  "Build the internal category list."
+  (setq ewo:categories (append ewo:internal-categories ewo-categories)))
+
+(defun ewo:public-categories ()
+  "Return public categories."
+  (nlet loop ((cats ewo:categories))
+    (if (null cats)
+        '()
+      (if (plist-get (cdr (car cats)) :internal)
+          (loop (cdr cats))
+        (cons (car cats) (loop (cdr cats)))))))
 
 (defun ewo-get-cat-prop (cat prop)
   "Get the property of a category"
-  (plist-get (cdr (assoc cat ewo-categories)) prop)) 
+  (plist-get (cdr (assoc cat ewo-categories)) prop))
 
 (defun ewo-cat-names (cats)
   "Return category names list out of categories alist"
@@ -401,22 +432,30 @@ pairs (filenames . title) (file names are relative to
   "Build the navigation links to the categories. CATLIST is the
 list of categories, CURCAT is the id of the current category, or
 `nil' if we are processing the home page."
+  ;; TODO: introduce the concept of invisible/internal category. It
+  ;; will be used by tags. This means that we need an internal
+  ;; variable to store the categories. This variable should contain
+  ;; the user defined categories and internal categories defined by
+  ;; ewo. It will be initialized at the very beginning of the
+  ;; publishing process.
   (if (not (consp catlist))
       '()
     (let ((catname 	(car (car catlist)))
-	  (pl 		(cdr (car catlist))))
+	  (pl 		(cdr (car catlist)))) ; prop list of category
       (concat
-       (make-string 10 ?\s)
-       "<li" 
-       (if (string-equal curcat catname)
-	   " class=\"active\"" "")
-       "><a href=\"" 
-       (if curcat "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") 
-       (plist-get pl :directory) "\">"
-       (if (plist-get pl :icon) 
-	   (concat "<span class=\"glyphicon glyphicon-" (plist-get pl :icon) "\" aria-hidden=\"true\"></span> ")
-	 "")
-       (plist-get pl :label) "</a></li>\n"
+                                        ; skip internal categories
+       (unless (plist-get pl :internal)
+;       (unless (and (string-equal curcat catname) (plist-get pl :internal))
+         (concat 
+          (make-string 10 ?\s)
+          "<li" 
+          (when (string= curcat catname) " class=\"active\"")
+          "><a href=\"" 
+          (if curcat "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") 
+          (plist-get pl :directory) "\">"
+          (when (plist-get pl :icon) 
+            (concat "<span class=\"glyphicon glyphicon-" (plist-get pl :icon) "\" aria-hidden=\"true\"></span> "))
+          (plist-get pl :label) "</a></li>\n"))
        (ewo-categories-nav curcat (cdr catlist))))))
 
 (defun ewo-rootlink (level)
@@ -425,11 +464,24 @@ list of categories, CURCAT is the id of the current category, or
       ""
     (concat "../" (ewo-rootlink (- level 1)))))
 
-;; perhaps rename this, or remove. In the latter case, remove
-;; ewo-html-preamble, as it can directly be included as html-preamble.
-(defun ewo-html-nav (propl)
-  "Build the navigation. PROPL is the list of publishing properties. Includes
-the preamble before if not `nil'."
+(defun ewo:tag-nav (name)
+  "Generate a navigation link to the tag page from category `name'."
+  (let ((tag-cfg (cdr (assoc-string "tags" ewo:categories))))
+    (concat
+     "            <li"
+     (when (string= name "tags") " class=\"active\"")
+     "><a href=\""
+     (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./")
+     "tags.html\">"
+     (when (plist-get tag-cfg :icon)
+       (concat "<span class=\"glyphicon glyphicon-" (plist-get tag-cfg :icon) "\" aria-hidden=\"true\"></span> "))
+     (plist-get tag-cfg :label) "</a></li>\n")))
+
+
+;; perhaps remove. In this case, remove ewo-html-preamble, as it can
+;; directly be included as html-preamble.
+(defun ewo-html-gen-preamble (propl)
+  "Include the preamble id not `nil'. PROPL is the list of publishing properties."
   (concat (if ewo-html-preamble ewo-html-preamble "") "\n"))
 
 (defun ewo-cat-props (cat root publish)
@@ -453,10 +505,10 @@ of the project is ROOT and the publishing directory is PUBLISH."
                  :html-head-include-default-style nil ; use this now
                  :section-numbers nil
                  ;; :table-of-contents nil ; seems to be obsolete
-                 :with-toc t ; use this now
+                 :with-toc (plist-get props :internal) ; use this now
                  :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
                  :html-head ewo-cat-html-head
-                 :html-preamble 'ewo-html-nav
+                 :html-preamble 'ewo-html-gen-preamble
                  :html-postamble ewo-html-postamble
                  :ewo-with-toc t ; generate toc in navbar
                  :ewo-cat-name name)))
@@ -513,7 +565,7 @@ function `ewo-publish'."
            :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
 	   :html-head ewo-html-head
-	   :html-preamble 'ewo-html-nav
+	   :html-preamble 'ewo-html-gen-preamble
 	   :html-postamble ewo-html-postamble
            :ewo-cat-name nil)
           (list
@@ -530,11 +582,11 @@ function `ewo-publish'."
 	   ;; :table-of-contents nil       ; seems to be obsolete
            :with-toc t ; use this now
 	   :with-properties '("BOOTSTRAP_COLUMN" "BOOTSTRAP_ROW_BEGIN" "BOOTSTRAP_ROW_END")
-	   :html-head ewo-html-head
-	   :html-preamble 'ewo-html-nav
+	   :html-head ewo-cat-html-head
+	   :html-preamble 'ewo-html-gen-preamble
 	   :html-postamble ewo-html-postamble
-           :ewo-cat-name nil))
-	 (ewo-cat-project-alist ewo-categories root publish)
+           :ewo-cat-name "tags"))
+	 (ewo-cat-project-alist (ewo:public-categories) root publish)
 	 (list
 	  (list
 	   "images"
@@ -580,7 +632,7 @@ function `ewo-publish'."
 
 	  `("website" :components ,(append 
 				    '("images" "css" "js" "fonts" "documents")
-				    (ewo-cat-names ewo-categories)
+				    (ewo-cat-names (ewo:public-categories))
                                         ; org files (ie top index) and tags should be last
                                     '("orgfiles" "tagfiles")))))))
 
@@ -594,9 +646,9 @@ function `ewo-publish'."
 (defun ewo-get-level (filename)
   "Get file level from root. Used to determine the value of the
 template variable `ewo:catlevel'."
-  (let* ((full-root (expand-file-name ewo:current-root))
+  (let* ((full-root (expand-file-name (plist-get ewo:current-config :root-dir)))
 	 (regex (concat full-root  
-			"\\(\\(/[-_a-zA-Z0-9]+\\)+\\)?/[-_a-zA-Z0-9]+\\.org")))
+			"\\(\\(/[-_[:alpha:]0-9]+\\)+\\)?/[-_[:alpha:]0-9]+\\.org")))
     (if (string-match regex filename)
 	(if (not (match-string 1 filename))
 	    ;; at root ! (no subexpression match)
@@ -682,9 +734,6 @@ first arg. Return `nil' otherwise."
   (let* ((funcname (car expr))
          (args     (cdr expr))
          (funcentry (assq funcname ewo-template-funcs)))
-    ;; (princ (format "funcname : %s\n" funcname))
-    ;; (princ (format "args : %s\n" args))
-    ;; (princ (format "funcentry : %s\n" funcentry))
     (when funcentry
       (let* ((funcdesc    (cdr funcentry))
              (funcarity   (plist-get funcdesc :arity))
@@ -702,15 +751,10 @@ first arg. Return `nil' otherwise."
   "Check if the ARGS of a function call are safe.
 
 Return the ARGS, or `nil' otherwise."
-  ;; (princ (format "args check %s\n" args)) 
   (if (null args)
-      (progn
-        ;; (princ "==> ()\n")
-        '())
+      '()
     (when (ewo-secure-expressionp (car args))
       (let ((res (ewo-secure-argsp (cdr args))))
-        ;; (princ (format "rec return from argsp : %s\n" res)) 
-        ;; (princ (format "==> %s\n" (cons (car args) res))) 
         (cons (car args) res)))))
 
 (defun ewo-secure-varp (expr)
@@ -740,16 +784,12 @@ if it is secure, or `nil' otherwise.
 "
   (cond 
    ((listp expr)
-    ;; (princ (format "call check %s\n" expr))
     (ewo-secure-callp expr))
    ((numberp expr) 
-    ;; (princ (format "number check %s\n" expr))
     expr)
    ((stringp expr) 
-    ;; (princ (format "string check %s\n" expr))
     expr)
    ((symbolp expr) 
-    ;; (princ (format "var check %s\n" expr))
     (ewo-secure-varp expr))))
 
 
@@ -842,20 +882,22 @@ toc, info is an alist ised as a communication channel."
           <ul class=\"dropdown-menu dropdown-menu-right\">"
           (ewo-toc-content depth info)
 "</ul>
-        </li>")
-)
+        </li>"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; navbar generation
 
 (defun ewo-html-navbar (info)
   "Build the navigation bar, and optionnally the toc. INFO is a
 plist used as a communication channel."
   (let ((name (plist-get info :ewo-cat-name))) ; get the name of the
                                                 ; category (nil if we
-                                                ; are on the homepage)
+                                        ; are on the homepage)
+;;    (message "navbar config : %s" ewo:current-config)
     (concat 
      "<header>\n"
 "  <nav class=\"" ewo-navbar-class "\">
-    <div class=\"container\">
+    <div class=\"container-fluid\">
       <div class=\"navbar-header\">
         <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
           <span class=\"sr-only\">Toggle navigation</span>
@@ -868,9 +910,11 @@ plist used as a communication channel."
       <div id=\"navbar\" class=\"navbar-collapse collapse\">
         <ul class=\"nav navbar-nav\">
           <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> " ewo-home-name "</a></li>\n" 
-	  (ewo-categories-nav name ewo-categories)
+	  (ewo-categories-nav name ewo:categories)
           (let ((depth (plist-get info :with-toc)))
             (when depth (ewo-html-toc depth info)))
+          (unless (avl-tree-empty ewo:tags)
+            (ewo:tag-nav name))
 "       </ul>
       </div> <!-- navbar-collapse -->
     </div> <!-- container-fluid -->
@@ -888,20 +932,15 @@ Only allowed functions with allowed args are possible, and args
 must be in a list of allowed variables."
   (when (eq backend 'ewo)
     ;; build the environment of the function calls (i.e. variables available to the user in templates
-    ;; (princ (format "post-processing file \"%s\"\n"  (plist-get channel :input-file)))
     (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
           (ewo:catname  (ewo-get-catname channel))
 	  (search-start nil))
-      ;; (princ (format "ewo:catlevel: %s\n" ewo:catlevel))
-      ;; (princ (format "ewo:catname: %s\n" ewo:catname))
       (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
 	(let* ((start (match-beginning 1))
 	       (end   (match-end 1))
 	       (strform (substring fstring start end))
 	       (form (read strform)))
-	  ;; (princ (format "===== lisp expr is \"%s\"\n" strform))
           (let ((final-form (ewo-secure-expressionp form)))
-            ;; (princ (format "===== lisp final expr is \"%s\"\n" final-form))
             (if final-form
                 (let* ((fun (list 'lambda ewo-template-vars final-form))
                        (args (mapcar (lambda (v) (symbol-value v)) ewo-template-vars))
@@ -943,9 +982,6 @@ drawer filters are called before headline filters, as the ewo
 property drawer filter set flags indicating the presence of
 columns and row begin or end."
   (when (not (eq backend 'html)) fstring) 
-  ;; (princ "*************************************************************************\n")
-  ;; (princ (format "head : \"%s\"\n\n" fstring))
-  ;; (princ (format "channel : %s\n\n" channel))
   (let ((re "^\\(<div.+class=\"outline-[2-5].+panel.+\">[[:space:]]*\n\\)\\(<h[2-5].+>.+</h[2-5]>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
     (when (string-match re fstring)
       (let ((start-outline-2 (match-beginning 1))
@@ -1015,17 +1051,12 @@ column.")
 and BOOTSTRAP_ROW_END properties. This information will be used
 by the headline filter `ewo-filter-headline'."
   (when (not (eq backend 'html)) nil)
-  ;; (princ (format "drawer : \"%s\"\n" fstring))
   (when (string-match "^BOOTSTRAP_COLUMN:[[:space:]]+\\(.+\\)[[:space:]]*$" fstring)
-    ;; (princ "COLUMN OK !!!!!!!!!!!!!!!!!\n")
     (setq ewo-bootstrap-column (match-string 1 fstring)))
   (when (string-match "^BOOTSTRAP_ROW_BEGIN:[[:space:]]+.+[[:space:]]*$" fstring)
-    ;; (princ "ROW BEGIN OK !!!!!!!!!!!!!!!!!\n")
     (setq ewo-bootstrap-row-begin t))
   (when (string-match "^BOOTSTRAP_ROW_END:[[:space:]]+.+[[:space:]]*$" fstring)
-    ;; (princ "ROW END OK !!!!!!!!!!!!!!!!!\n")
     (setq ewo-bootstrap-row-end t))
-  ;; return a newline because filter system doesn't like empty strings
   "\n")
 
 
@@ -1074,19 +1105,20 @@ by the headline filter `ewo-filter-headline'."
       ;; process files
       (dolist (file flist)
         (when (not (ewo:category-indexp file (plist-get props :base-directory)))
-          (let ((buffer (find-file-noselect file)))
-            (set-buffer buffer)
-            (let ((state (ewo:read-org-option "EWO_STATE")))
-              (when (string= state "published")
-                (let* ((date    (ewo:get-buffer-date))
-                       (title   (ewo:get-buffer-title))
-                       (id      (ewo:get-buffer-id))
-                       (excerpt (ewo:get-buffer-excerpt)))
-                  (ewo:add-to-article-lists id date title excerpt file))))
-            (save-buffer)
-            (kill-buffer)))) 
+          (let* ((visiting (find-buffer-visiting file))
+                 (buffer   (or visiting (find-file-noselect file))))
+            (unwind-protect
+                (with-current-buffer buffer
+                  (let ((state (ewo:read-org-option "EWO_STATE")))
+                    (when (string= state "published")
+                      (let* ((date    (ewo:get-buffer-date))
+                             (title   (ewo:get-buffer-title))
+                             (id      (ewo:get-buffer-id))
+                             (excerpt (ewo:get-buffer-excerpt)))
+                        (ewo:add-to-article-lists id date title excerpt file))))
+                  (save-buffer))
+              (unless visiting (kill-buffer buffer)))))) 
       ;; generate category index
-      (setq dbg:lst (copy-tree ewo:blog-category-article-list))
       (ewo:blog-gen-cat-index dir cat))))
 
 (defun ewo-prepare-blog-index (props)
@@ -1103,35 +1135,38 @@ collection."
         (dir   (plist-get props :base-directory)))
     (dolist (file flist)
       (when (not (ewo:category-indexp file (plist-get props :base-directory)))
-;;        (message "collecting file tags for file %s" file)
-        (let ((buffer (find-file-noselect file)))
-          (set-buffer buffer)
-          (let ((tags-raw (ewo:read-org-option "FILETAGS"))
-                (title    (ewo:read-org-option "TITLE"))
-                (pub      (ewo:read-org-option "EWO_STATE")))
-;;            (message "EWO_STATE : *%s*" pub)
-            (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
-;;              (message "FILETAGS: %s " tags-raw)
-;;              (message "TITLE: %s " title)
-              (nlet loop ((tags (split-string tags-raw ":" t)))
-                (unless (null tags)
-                  (ewo:add-to-tag-map (car tags) title (file-relative-name file ewo:current-root))
-                  (loop (cdr tags))))))
-          (save-buffer)
-          (kill-buffer))))))
+        (let* ((visiting (find-buffer-visiting file))
+               (buffer (or visiting (find-file-noselect file))))
+          (unwind-protect
+              (with-current-buffer buffer
+                (let ((tags-raw (ewo:read-org-option "FILETAGS"))
+                      (title    (ewo:read-org-option "TITLE"))
+                      (pub      (ewo:read-org-option "EWO_STATE")))
+                  (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
+                    (nlet loop ((tags (split-string tags-raw ":" t)))
+                      (unless (null tags)
+                        (ewo:add-to-tag-map
+                         (car tags) title
+                         (file-relative-name file (plist-get ewo:current-config :root-dir)))
+                        (loop (cdr tags))))))
+                (save-buffer))
+                
+            (unless visiting (kill-buffer buffer))))))))
 
 (defun ewo-prepare-tag-files (props)
   "Generate the tags.org file and the index files for each tag
 from the `ewo:tags' tree."
-  (ewo:clean-tag-files) ; TODO
-  (let* ((filename (expand-file-name "tags.org" ewo:current-root))
-         (buffer (find-file-noselect filename)))
-    (set-buffer buffer)
-    (erase-buffer)
-    (ewo:tagfile-header)
-    (ewo:tagfile-content)
-    (save-buffer)
-    (kill-buffer)))
+  (ewo:clean-tag-files)
+  (let* ((filename (expand-file-name "tags.org" (plist-get ewo:current-config :root-dir)))
+         (visiting (find-buffer-visiting filename))
+         (buffer (or visiting (find-file-noselect filename))))
+    (unwind-protect
+        (with-current-buffer buffer
+          (erase-buffer)
+          (ewo:tagfile-header)
+          (ewo:tagfile-content)
+          (save-buffer))
+      (unless visiting (kill-buffer)))))
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -1255,7 +1290,6 @@ is the property list for the given project.  PUB-DIR is the
 publishing directory.
 
 Return output file name."
-  (princ "ewo-html publishing started\n")
   (org-publish-org-to 'ewo filename
 		      (concat "." (or (plist-get plist :html-extension)
 				      org-html-extension
@@ -1280,7 +1314,9 @@ Return output file name."
   (setq ewo:blog-global-article-list '())
                                         ; clear tag tree
   (avl-tree-clear ewo:tags)
-  (let ((config-props (cdr (assoc config ewo-configurations))))
+  (setq ewo:current-config (cdr (assoc config ewo-configurations)))
+  (ewo:build-internal-categories)
+  (let ((config-props ewo:current-config))
     (if config-props
         (save-excursion
           (let* ((root-dir (plist-get config-props :root-dir))
@@ -1289,13 +1325,13 @@ Return output file name."
                 (progn
                   (message "Publishing ewo config %s, root dir %s, publishing dir %s"
                            config root-dir publish-dir)
-                  (setq ewo:current-root root-dir)
                   (ewo-gen-project-alist root-dir publish-dir)
                   (org-publish "website")
-                  (setq ewo:current-root nil)
                   (message "ewo publishing complete"))
               (error "bad ewo config"))))
-      (error "ewo config not found"))))
+      (error "ewo config not found")))
+  (setq ewo:current-config nil))
+
 
 (provide 'ox-ewo)
 
