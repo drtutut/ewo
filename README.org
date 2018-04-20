@@ -1,4 +1,8 @@
-This is EWO 3.0
+#+TITLE: EWO (Easy Websites with Org) A Static Aite Generator
+
+* Introduction
+
+This is EWO 3.1
 
 EWO is an extension to the orgmode HTML publishing mechanism. It allows
 to define a simple static web site based on /categories/. 
@@ -24,3 +28,14 @@ EWO as a derived back-end of the org html back-end.
 
 For installation and usage instructions see the documentation in the
 doc/ folder.
+
+* Workflow
+
+  1. Define the structure of the site, that is, define
+     /categories/. Decide for each category if it's a /static/
+     category or a /blog/ category.
+  2. Define plublication configurations (at leat one).
+  3. Fine tune different aspects (like classes used for some
+     elements).
+  4. Write your pages / articles.
+  5. generate the site.
