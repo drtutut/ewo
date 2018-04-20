@@ -1,4 +1,4 @@
-#+TITLE: EWO (Easy Websites with Org) A Static Aite Generator
+#+TITLE: EWO (Easy Websites with Org) A Static Site Generator
 
 * Introduction
 
