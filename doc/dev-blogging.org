@@ -209,8 +209,7 @@
     + ~title~ : the title of the article
   - ~ewo-last-articles~ :: <<ewo-last-articles>> The number of newest
        articles to put in the global toc.
-      
-      
+            
 * new internal global vars
 
   - ~ewo:blog-global-article-list~ :: <<ewo/blog-global-article-list>>
@@ -219,5 +218,30 @@
        chronological order.
 
 * Task list
-** TODO Add a dependency to the uuidgen package
+** DONE Add a dependency to the uuidgen package
+   CLOSED: [2018-04-19 jeu. 11:18]
 
+** Adding Tags in the signature
+
+   This will be done by a ~<lisp></lisp>~ construct. For thus purpose
+   we introduce a new function ~(ewo-tags &optional sep uuid)~. This
+   function searches the tags associated with the article. The search
+   is performed in the tag tree. 
+
+   ~sep~ is optional. If it is non nil, it represent a string which is
+   used as a separator between tags. If it is nil, the default
+   separator is used, that is, a space.
+
+   ~uuid~ is optionnal. If it is non nil, it represents the UUID of
+   the article (the EWO_ARTICLE_ID). If nil, this ID will be guessed
+   by ewo.
+
+   In order to perform this search, we need to retrieve the uuid of
+   the article. This id will be injected by ewo as a HTML ~<meta>~ tag
+   in the preamble. We use the ~id~ attribute to specify the
+   UUID. This is performed by ~ewo-html-gen-preamble~. Thez UUID is retrieved using 
+
+
+
+   
+   

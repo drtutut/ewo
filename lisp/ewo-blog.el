@@ -26,8 +26,8 @@
 (require 'ewo-util)
 
 (defun ewo:article-compare (art1 art2)
-  "compares 2 items in the blog articles list. The comparison
-criteria is the date."
+  "Compares 2 items ART1 and ART2 in the blog articles list. The
+comparison criteria is the date."
   (let ((date1 (plist-get (cdr art1) :date))
         (date2 (plist-get (cdr art2) :date)))
     (not (time-less-p (date-to-time date1) (date-to-time date2)))))
@@ -35,7 +35,7 @@ criteria is the date."
 
 
 (defun ewo:last-articles (arts)
-  "returns the `ewo-last-articles' articles from ARTS."
+  "Returns the `ewo-last-articles' articles from ARTS."
   (let ((sorted (sort arts ewo:article_compare)))
     (nlet loop ((l sorted)
                 (n ewo-last-articles))
@@ -44,8 +44,8 @@ criteria is the date."
         (cons (car l) (loop (- n 1) (cdr l)))))))
 
 (defun ewo:get-buffer-date ()
-  "gets the #+DATE keyword value in the current buffer. If it
-does not exist create it with the current date."
+  "Gets the org keyword \"DATE\" value in the current buffer. If
+it does not exist create it with the current date."
   (let ((d (ewo:read-org-option "DATE")))
     (if (null d)
         (save-excursion
@@ -60,8 +60,8 @@ does not exist create it with the current date."
       d)))
 
 (defun ewo:get-buffer-title ()
-  "Gets the #+TITLE keyword in the current buffer. Issue an error
-if it is not found."
+  "Gets the org keyword \"TITLE\" value in the current
+buffer. Issue an error if it is not found."
   (let ((tit (ewo:read-org-option "TITLE")))
     (if (null tit)
         (user-error "No title in article")
@@ -93,7 +93,12 @@ if it does not exist."
 (defun ewo:add-to-article-lists (id date title excerpt file)
   "Add a blog article to the article list of the category and to
 the global articles list. If the article is already present,
-issue an error."
+issue an error.
+
+ID is the unque identifier of the article, DATE is the date
+present in the article, TITLE is the title of the article,
+EXCERPT is an excerpt of the headlines of the article, and FILE
+is the filename of the file containing the article."
   (when (assoc id ewo:blog-global-article-list)
     (user-error (format "article %s already in global table" id)))
   (when (assoc id ewo:blog-category-article-list)
@@ -113,6 +118,8 @@ issue an error."
          (string= fname "index.org"))))
 
 (defun  ewo:create-minimal-cat-index (cat)
+  "Creates a minimal category index in current buffer. CAT is the
+category name."
   (insert (format "#+TITLE: %s / %s" ewo-name cat))
   (newline)
   (insert "#+DATE: " )
@@ -128,8 +135,9 @@ issue an error."
 
 (defun ewo:prepare-cat-index-buffer (dir cat)
   "Prepare the category CAT index rooted in DIR.
-Returns a pair (buffer . level) where buffer is the buffer of the category index, and
-level is the heading level of the toc in index."
+Returns a pair (BUFFER . LEVEL) where BUFFER is the buffer of the
+category index, and LEVEL is the heading level of the toc in
+index."
   (let ((idxfile (concat (file-name-as-directory dir) "index.org")))
     (let* ((exist (file-exists-p idxfile))
            (visiting (find-buffer-visiting idxfile))
@@ -174,8 +182,9 @@ level is the heading level of the toc in index."
 
 (defun ewo:prepare-blog-index-buffer (dir)
   "Prepare the blog global index rooted in DIR.
-Returns a pair (buffer . level) where buffer is the buffer of the category index, and
-level is the heading level of the toc in index. If there ins no index section in the buffer, "
+Returns a pair (BUFFER . LEVEL) where BUFFER is the buffer of the
+category index, and LEVEL is the heading level of the toc in
+index."
   (let* ((idxfile (concat (file-name-as-directory dir) "index.org"))
          (visiting (find-buffer-visiting idxfile))
          (buf      (find-file-noselect idxfile)))
@@ -210,8 +219,8 @@ level is the heading level of the toc in index. If there ins no index section in
 
   
 (defun ewo:make-toc-heading (art fmt)
-  "Build a toc heading for article ART. It relies on the format
-specified in FMT."
+  "Build a toc heading for article ART. Use the format specified
+by FMT. Returns a string."
   (nlet loop ((idx 0))
     (if (string-match "\\([^%]*\\)%\\([^%]*\\)%" fmt idx)
         (let* ((mboiler-start  (nth 2 (match-data)))
@@ -256,7 +265,7 @@ specified in FMT."
 
 
 (defun ewo:gen-blog-index (dir)
-  "generate the global blog index"
+  "Generate the global blog index in directory DIR."
   (let ((info (ewo:prepare-blog-index-buffer dir)))
     (unless (null info)
       (setq ewo:blog-global-article-list (sort ewo:blog-global-article-list 'ewo:article-compare))

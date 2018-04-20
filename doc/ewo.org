@@ -4,7 +4,7 @@
 
 * Introduction
 
-  This is EWO 3.0
+  This is EWO 3.1
 
   EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
@@ -13,7 +13,8 @@
   with an entry in the navigation bar. This allows the automatic
   generation of a navigation bar.
 
-  EWO relies on the [[http://getbootstrap.com/][boostrap]] framework.
+  EWO heavily relies on the [[http://getbootstrap.com/][boostrap]] framework. For now it uses the
+  3.3.7 version of bootstrap.
 
   Besides, EWO brings some tools to easily use some functionnalities
   of the bootstrap framework.
@@ -26,7 +27,23 @@
 
   Version 3.0 introduces blogging categories.
 
+  Version 3.1 introduces a tagging system to classify blog articles.
+
 * Installation
+** Dependencies / Incompatibilities
+
+   Ewo needs the following emacs packages :
+   - avl-tree
+   - uuidgen
+   - cl-lib
+
+     
+   Do not try to replace bootstrap 3.x with bootstrap 4.x : it wont
+   work, as EWO relies on the ~panel~ divs which disappeared from 4.x.
+
+   Support for both bootstrap 3.x and 4.x is planned. 
+
+** Installing
 
   Add the directory of ewo lisp files to the =load-path= variable. For
   example :
@@ -59,6 +76,7 @@
   via elpa :
   - cl-lib
   - uuidgen
+  - avl-tree
 
   You should be done. Go to the following section to start a new website.
 
@@ -87,17 +105,41 @@
 
    This variable contains a string which defines the name of your website. 
 
-** variable =ewo-root-dir=
+   The definition of this variable is not mandatory.
 
-   This variable contains the full path of the directory containing
-   the org files containing the pages of your future site, along with
-   the auxiliary files like css stylesheets, javascript files, images\dots
+** variable =ewo-configurations=
 
-** variable =ewo-publish-dir=
+   Association list of alternative publishing configurations for
+   ewo. The CAR of each element of the alist is a string, uniquely
+   identifying the configuration. the CDR of each element is a well
+   formed property list with an event number of elements, alternating
+   keys and values, which specifies the configuration values. The
+   possible configuration values are:
 
-   This variable contains the full path where your project will be
-   exported in its html form. It can be a path on the local machine,
-   but also a tramp-like pathname defining a path on a remote machine[fn:1].
+   - ~:root-dir~ :: Root directory of the org-source of the
+                    website. That is, the full path of the directory
+                    containing the org files containing the pages of
+                    your future site, along with the auxiliary files
+                    like css stylesheets, javascript files,
+                    images\dots
+   - ~:publish-dir~ :: The publishing directory of the website. This
+                       variable contains the full path where your
+                       project will be exported in its html form. It
+                       can be a path on the local machine,but also a
+                       tramp-like pathname defining a path on a remote
+                       machine[fn:1].
+                        
+                       
+   This allows for multiple publishing configurations (for example you
+   can have a test configuration and a production configuration.
+
+   When the function ~ewo-publish~ is invoked interactively, it asks
+   for the identifier of the configuration. By default, it uses the
+   first item of this alist.
+
+   It is mandatory that you define at least one entry in this alist.
+
+[fn:1] This feature has not been tested, please let me know if it works. 
 
 ** variable =ewo-categories=
 
@@ -128,13 +170,12 @@
                  subtree are articles, which will be published under
                  certain conditions. [[#d4d360f0-db39-4814-9f70-b3097834153c][More on blogging categories]]
 
-** variable =ewo-navbar-class=
+                 
+   You must define at least one category.
 
-   This variable is a string indicating the class of the bootstrap
-   navigation bar. By default, this variable is initialized with the
-   value =navbar navbar-inverse navbar-fixed-top=.
+** variable =ewo-home-name=
 
-[fn:1] This feature has not been tested, please let me know if it works. 
+   The name of the homepage. Default is "Home".
 
 ** variable =ewo-doc-extensions=
    
@@ -154,10 +195,11 @@
 
 ** variable =ewo-html-head=
 
-   A string containing the /head of the home page/. This code will be
-   included in the <head></head> section. Be careful if you tweak this
-   variable, because it contains the inclusion of different CSS
-   stylesheet (bootstrap in particular, but also jquery).
+   A string containing the /head of the home page and of any page
+   generated at the root of the site/. This code will be included in
+   the <head></head> section. Be careful if you tweak this variable,
+   because it contains the inclusion of different CSS stylesheet
+   (bootstrap in particular, but also jquery).
 
 ** variable =ewo-cat-html-head=
 
@@ -166,7 +208,26 @@
    if you tweak this variable, because it contains the inclusion of
    different CSS stylesheet (bootstrap in particular, but also
    jquery). it also uses the ~<lisp></lisp>~ mechanism to universalize
-   links to files.
+   links to files. See documentation of the [[#5b64f846-e6bb-4b14-8aef-404220426e02][~<lisp></lisp>~ mechanism]]
+   for more details.
+
+** variable =ewo-navbar-class=
+
+   This variable is a string indicating the class of the bootstrap
+   navigation bar. By default, this variable is initialized with the
+   value =navbar navbar-inverse navbar-fixed-top=.
+
+** variable =ewo-navbar-container=
+
+   A string describing the class of the bootstrap navbar
+   container. Usual values are ~container~ and ~container-fluid~.  The
+   default value is ~container-fluid~.
+
+** variable =ewo-navbar-ul=
+
+   A string describing the class of the bootstrap ~<ul>~ element in a
+   navbar. Usual values are ~nav navbar~ for a left-aligned list, and
+   ~nav navbar navbar-right~ for a right-aligned list.
 
 ** variable =ewo-ext-link-addition=
    :PROPERTIES:
@@ -262,8 +323,11 @@
    
 #+BEGIN_SRC emacs-lisp
   (defvar ewo-name "Retry/Abort")
-  (defvar ewo-root-dir "~/Documents/www/MySite/org")
-  (defvar ewo-publish-dir "~/public_html")
+  (defvar ewo-configurations
+    '(("default"
+       :root-dir "~/Documents/www/MySite/org"
+       :publish-dir "~/public_html")))
+
   (defvar ewo-categories
     '(("teaching"
        :label "Teaching"
@@ -282,9 +346,10 @@
        :type blog)))           
 #+END_SRC
 
-  This configuration defines a site whose name is "Retry/Abort", whose
-  local root directory is =~/Documents/www/MySite/org= and whose
-  publishing directory is =~/public_html=.
+  This configuration defines a site whose name is "Retry/Abort". It
+  contains one publishing configuration whose local root directory is
+  =~/Documents/www/MySite/org= and whose publishing directory is
+  =~/public_html=.
 
   There are three categories in this project :
   - two static categories : a teaching category and a research
@@ -319,12 +384,16 @@
 		 +-- js
 		 |
 		 +-- images
+                 |
+                 +-- tags
 		 |
 		 \-- documents
   #+END_EXAMPLE
 
   The minimal content of these directory is defined hereafter. Note
-  that the mandatory files are provided by ewo.
+  that the mandatory files are provided by ewo. The =tags= directory
+  is not necessarily created, and is relatied to the tags system. See
+  [[*Tags][tags]] for details.
 
 ** the =css= directory
 
@@ -509,10 +578,34 @@
    order. The date used is the date present in the ~DATE~ keyword of
    articles.
 
+** Tags
+   :PROPERTIES:
+   :CUSTOM_ID:c1d29f01-0038-493a-98dd-2ab9bbb4ccc1
+   :END:
+
+   The tag system allows to classify thematically blog articles, that
+   is, articles which are [[#1c6e6e19-535d-44f2-944a-2606affada4d][published]].
+
+   You can associate a list of tags to an article using the [[info:org#Tag%20inheritance][FILETAGS]]
+   option of org mode.
+
+   During the publication of the site, tags will be collected and :
+   - a global tags.org file will be generated in the root directory,
+     containing a listing all collected tags and how many blog
+     articles mention it.
+   - For each tag ~tagname~ a file ~tags/tagname.org~ will be
+     generated, containing links to the articles mentionning this tag.
+   - a "Tags" menu entry is generated. This entry appears ob the home
+     page and in blogging categories. If no tags have bee collected,
+     then no menu entry is generated.
+
 * Deeper customization
 ** the ~<lisp></lisp>~ mechanism
+   :PROPERTIES:
+   :CUSTOM_ID: 5b64f846-e6bb-4b14-8aef-404220426e02
+   :END:
 
-   EWO enables the insertion of ~<lisp></lisp>~ constructs in your pages[fn:2].
+   EWO enables the insertion of ~<lisp></lisp>~ constructs in your pages.
 
    These constructs allows you to call lisp functions to produce a
    textual result which is then substituted to the <lisp></lisp>
@@ -530,6 +623,13 @@
         constructs. Initially contains 
      + the =ewo-rootlink= function, which generates an up link to root
        of the site depending on LEVEL parameter.
+     + the =ewo-filetags= function, which generates a list of the tags
+       used in a blog article. It has a mandatory CATNAME argument
+       which is the category name, and an optionnal SEP argument which
+       is a string used as a separator between the tags (a space by
+       default). The function generates a list of tags appearing in a
+       blog article, and links them to the corresponding tag page (see
+       documentation of the [[*Tags][tag system]]).
      + arithmetic functions : ~+~, ~-~, ~*~, ~/~, ~%~, ~mod~,
      + ~1+~ and ~1-~ incrementing and decrementing operators.
      + ~quote~ function.
@@ -544,15 +644,60 @@
    The binding of variables is local to the ~<lisp>~ construct
    machinery to keep it safe.
 
+   In order to put ~<lisp>~ constructs in your org pages, you must
+   enclose them in HTML blocks like
+   #+BEGIN_SRC org
+     ,#+BEGIN_EXPORT html
+     <lisp>(ewo-rootlink ewo:catlevel)</lisp>
+     ,#+END_EXPORT
+   #+END_SRC
+
+   or 
+ 
+   #+BEGIN_SRC org
+     ,#+HTML: <lisp>(ewo-rootlink ewo:catlevel)</lisp>
+   #+END_SRC
+
+   or using inline inclusion like ~@@html:<lisp>(ewo-rootlink
+   ewo:catlevel)</lisp>@@~.
+
+   You can also use these constructs in the ewo configuration
+   variables which accept HTML : ~ewo-html-postample~,
+   ~ewo-html-preamble~, ~ewo-html-head~, ~ewo-cat-html-head~.
+
    For now there is no clear documentation on how to extend this
    mechanism (adding functions or args). If you whish to add you own
    functions and variables, please check the ~ewo-filter-prepost~
    function which implements the internal machinery of ~<lisp></lisp>~
    constructs.
 
-[fn:2] To insert these constructs in the body of you org files, you
-need to enclose them in '@@html:' constructs (see HTML Export in the
-org manual)
+** the ~<ewo-static></ewo-static>~ elements 
+
+   Allows to insert HTML code only in pages of static categories. Very
+   useful combined to the ~<lisp>~ mechanism. For example :
+
+   #+BEGIN_SRC org
+     ,#+BEGIN_EXPORT html
+     <ewo-static><lisp>ewo:catname</lisp></ewo-static>
+     ,#+END_EXPORT
+   #+END_SRC
+
+   Note that, in this example, the lisp code will never be evaluated
+   in a blog article, as the ~<ewo-static>~ block will be removed.
+
+** the ~<ewo-blog></ewo-blog>~ elements 
+
+   Allows to insert HTML code only in pages of blog categories. Very
+   useful combined to the ~<lisp>~ mechanism. For example :
+
+   #+BEGIN_SRC org
+     ,#+BEGIN_EXPORT html
+     <ewo-blog><lisp>(ewo-filetags ewo:catname ", ")</lisp></ewo-blog>
+     ,#+END_EXPORT
+   #+END_SRC
+
+   Note that, in this example, the lisp code will never be evaluated
+   in a static page, as the ~<ewo-blog>~ block will be removed.
 
 ** Bootstrap panels
 
@@ -654,12 +799,14 @@ org manual)
 
    #+END_SRC
 
-** Table of contents
+** Table of contents of pages/articles
 
    Ewo is able to generate a table of contents for any page as a
    dropdown menu in the navigation bar. It bases the generation on the
    ~toc:~ and ~num:~ options of the org document.
+
 * Publishing the site
 
-  To publish a site,  invoke the ~ewo-publish~ function.
+  To publish a site, invoke the ~ewo-publish~ function. This function
+  asks for a configuration id (see ~ewo-configurations~) doc.
 

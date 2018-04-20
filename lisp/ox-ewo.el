@@ -98,10 +98,10 @@
   '(("default"
      :root-dir "~/Documents/www/MonSite/org"
      :publish-dir "~/public_html"))
-  "Association list of alternative configurations for ewo. The
-CAR of each element of the alist is a string, uniquely
-identifying the configuration. the CDR of each element is a well
-formed property list with an event number of elements,
+  "Association list of alternative publishing configurations for
+ewo. Each elements has the form (KEY . VALUE), where KEY is a
+string, uniquely identifying the configuration, and VALUE is a
+well formed property list with an event number of elements,
 alternating keys and values, which specifies the configuration
 values. The possible configuration values are:
 
@@ -129,11 +129,11 @@ values. The possible configuration values are:
      :icon "eye-open"
      :type static))
   "Association list of the categories defining a website project.
-Each element of the alist is a category of the website. The CAR
-of each element is a string, uniquely identifying the
-category. The CDR of each element is a well formed property list
-with an even number of elements, alternating keys and values,
-specifying the parameters of the category.
+Each element of the alist is a category of the website. It has
+the form (KEY . VALUE), where KEY is a string, uniquely
+identifying the category, and VALUE is a well formed property
+list with an even number of elements, alternating keys and
+values, specifying the parameters of the category.
 
   \(:property value :property value ... )
 
@@ -158,15 +158,15 @@ The defined properties are :
 
   `:type'
 
-  The type of the category. For now there is just one type :
-  static. This property is mandatory."
+  The type of the category. this can be either static or
+  blog. This property is mandatory."
   :group 'ewo
   :type '(alist 
 	  :key-type string  
 	  :value-type plist))
 
 (defcustom ewo-home-name "Home"
-  "String naming the home home of the site."
+  "String naming the home of the site."
   :group 'ewo
   :type 'string)
 
@@ -200,8 +200,8 @@ additional documents in a website."
 <![endif]-->
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
-  "A string containing the head of the home page. This code will be included in the
-<head></head> section."
+  "A string containing the head of the home page. This code will
+be included in the <head></head> section."
   :group 'ewo
   :type 'string)
 
@@ -217,8 +217,9 @@ additional documents in a website."
 <![endif]-->
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\"></script>"
-  "A string containing the head of the pages contained in a category.  This code will
-be included in the <head></head> section."
+  "A string containing the head of the pages contained in a
+category.  This code will be included in the <head></head>
+section."
   :group 'ewo
   :type 'string)
 
@@ -227,9 +228,10 @@ be included in the <head></head> section."
   :group 'ewo
   :type 'string)
 
-(defcustom ewo-navbar-container "container"
+(defcustom ewo-navbar-container "container-fluid"
   "A string describing the class of the bootstrap navbar
-container. Usual values are `container' and `container-fluid'."
+container. Usual values are \"container\" and
+\"container-fluid\"."
   :group 'ewo
   :type 'string)
 
@@ -244,35 +246,35 @@ container. Usual values are `container' and `container-fluid'."
 
 (defcustom ewo-ext-link-addition "ewoextlink"
   "A string describing the class of external links. To activate
-this feature please consult the documentation of
+this feature please consult the documentation of variable
 `ewo-ext-link-addition-type'."
   :group 'ewo
   :type 'string)
 
 (defcustom ewo-int-link-addition "ewointlink"
   "A string describing the class of internal links. To activate
-this feature please consult the documentation of
+this feature please consult the documentation of variable
 `ewo-int-link-addition-type'."
   :group 'ewo
   :type 'string)
 
 (defcustom ewo-ext-link-addition-type nil
-  "An atom describing the type of addtion performed on external
+  "An atom describing the type of addition performed on external
 links. The possible values are :
 
 `anchor' 
 
 The content of variable `ewo-ext-link-addition' is interpreted as
 a class attribute specification which is added to the external
-link `<a>' element.
+link \"<a>\" element.
 
 `span'
 
 The content of variable `ewo-ext-link-addition' is interpreted as
-a span class attribute specification. A `<span>' element is added
-at the end of the link with the specified class.
+a span class attribute specification. A \"<span>\" element is
+added at the end of the link with the specified class.
 
-`nil'
+nil
 
 No transformation is performed on external links.
 "
@@ -289,13 +291,13 @@ links. The possible values are :
 
 The content of variable `ewo-int-link-addition' is interpreted as
 a class attribute specification which is added to the internal
-link `<a>' element.
+link \"<a>\" element.
 
 `span'
 
 The content of variable `ewo-int-link-addition' is interpreted as
-a span class attribute specification. A `<span>' element is added
-at the end of the internal link with the specified class.
+a span class attribute specification. A \"<span>\" element is
+added at the end of the internal link with the specified class.
 
 `nil'
 
@@ -319,7 +321,7 @@ blog article to insert in a table of content."
 
 (defcustom ewo-blog-toc-entry-format "%date% - %title%"
   "The format of a toc entry for blogging categories. It is a
-string, which contains special sequences %keyword%, where
+string, which contains special sequences \"%keyword%\", where
 keyword can be:
 
 - `date' : the date of the article
@@ -340,9 +342,15 @@ keyword can be:
   :group 'ewo
   :type 'string)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; internal variables
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defvar ewo:blog-global-article-list '()
   "The global list of blog articles. It is an association list,
-each element being a pair (uuid . properties), where properties
+each element being a pair (UUID . PROPERTIES), where PROPERTIES
 is a property list containing the following keys :
 
 - `:date' : the date of the article 
@@ -355,7 +363,7 @@ is a property list containing the following keys :
 
 (defvar ewo:blog-category-article-list '()
   "The list of blog articles in a blog category. It is an association list,
-each element being a pair (uuid . properties), where properties
+each element being a pair (UUID . PROPERTIES), where PROPERTIES
 is a property list containing the following keys :
 
 - `:date' : the date of the article 
@@ -373,30 +381,30 @@ processing of a new category.")
   "Current published configuration.")
 
 (defvar ewo:conf-history nil
-  "history of used configurations (for use in the minibuffer).")
+  "History of used configurations (for use in the minibuffer).")
 
 (defvar ewo:last-config nil
-  "last used configuration for publishing.")
+  "Last used configuration for publishing.")
 
 (defvar ewo:tags (avl-tree-create 'ewo:tagtree-cmpfunc)
   "The tree of tag references.
 
 Each element ot the tree consists in a list. the car of this list
 is a string representing a tag. The cdr is a list of
-pairs (filenames . title) (file names are relative to the
+pairs (FILENAME . TITLE) (file names are relative to the
 `:root-dir' property of the current configuration).")
 
 (defvar ewo:categories nil
   "The internal table of categories. It contains the content of
-  `ewo-categories', plus ewo internal categories. Actually, the
-  only internal category is the tags category.")
+  `ewo-categories', plus ewo internal categories described by
+  variable `ewo:internal-categories'.")
 
 (defvar ewo:internal-categories
   '(("tags"
      :directory "tags"
      :label "Tags"
      :internal t))
-  "internal categories.")
+  "Internal categories.")
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -417,27 +425,18 @@ pairs (filenames . title) (file names are relative to the
           (loop (cdr cats))
         (cons (car cats) (loop (cdr cats)))))))
 
-(defun ewo-get-cat-prop (cat prop)
-  "Get the property of a category"
-  (plist-get (cdr (assoc cat ewo-categories)) prop))
-
-(defun ewo-cat-names (cats)
-  "Return category names list out of categories alist"
-  (if (not (consp cats))
-      '()
-    (cons (car (car cats))
-	  (ewo-cat-names (cdr cats)))))
+(defun ewo:cat-names (cats)
+  "Return category names list out of categories alist CATS."
+  (nlet loop ((c cats))
+    (if (null c)
+        '()
+    (cons (car (car c))
+	  (loop (cdr c))))))
 
 (defun ewo-categories-nav (curcat catlist)
   "Build the navigation links to the categories. CATLIST is the
 list of categories, CURCAT is the id of the current category, or
-`nil' if we are processing the home page."
-  ;; TODO: introduce the concept of invisible/internal category. It
-  ;; will be used by tags. This means that we need an internal
-  ;; variable to store the categories. This variable should contain
-  ;; the user defined categories and internal categories defined by
-  ;; ewo. It will be initialized at the very beginning of the
-  ;; publishing process.
+nil if we are processing the home page."
   (if (not (consp catlist))
       '()
     (let ((catname 	(car (car catlist)))
@@ -481,8 +480,9 @@ list of categories, CURCAT is the id of the current category, or
 ;; perhaps remove. In this case, remove ewo-html-preamble, as it can
 ;; directly be included as html-preamble.
 (defun ewo-html-gen-preamble (propl)
-  "Include the preamble id not `nil'. PROPL is the list of publishing properties."
-  (concat (if ewo-html-preamble ewo-html-preamble "") "\n"))
+  "Include the preamble id not `nil'. PROPL is the list of
+publishing properties."
+  (concat ewo-html-preamble "\n"))
 
 (defun ewo-cat-props (cat root publish)
 "Generate the publication properties for a category CAT. The root
@@ -524,15 +524,16 @@ of the project is ROOT and the publishing directory is PUBLISH."
 
 (defun ewo-cat-project-alist (catlist root publish)
   "Generate the publication association list for the different
-categories. This list respects the format of
-`org-publish-project-alist'. The root directory of the project
-is ROOT and the publishing directory is PUBLISH. CATLIST is the
-list of categories."
-  (if (not (consp catlist))
-      '()
-    (cons
-     (ewo-cat-props (car catlist) root publish)
-     (ewo-cat-project-alist (cdr catlist) root publish))))
+categories. This list respects the format of variable
+`org-publish-project-alist'. The root directory of the project is
+ROOT and the publishing directory is PUBLISH. CATLIST is the list
+of categories."
+  (nlet loop ((cl catlist))
+    (if (null cl)
+        '()
+      (cons
+       (ewo-cat-props (car cl) root publish)
+       (loop (cdr cl))))))
 
 (defun ewo-gen-project-alist (root publish)
   "Project alist generation. Uses the ROOT directory and the PUBLISH directory of the project.
@@ -541,11 +542,11 @@ Must be called after any modification of :
 
 - the page head content, or,
 - the postamble content, or,
-- the `ewo-categories' alist
+- the variable `ewo-categories'
 
-e.g. if you tweak these parameters in your
-.emacs. This is automatically performed by the publication
-function `ewo-publish'."
+e.g. if you tweak these parameters in your .emacs. This is
+automatically performed by the publication function
+`ewo-publish'."
   (setq org-publish-project-alist
 	(append
 	 (list
@@ -632,20 +633,22 @@ function `ewo-publish'."
 
 	  `("website" :components ,(append 
 				    '("images" "css" "js" "fonts" "documents")
-				    (ewo-cat-names (ewo:public-categories))
+				    (ewo:cat-names (ewo:public-categories))
                                         ; org files (ie top index) and tags should be last
                                     '("orgfiles" "tagfiles")))))))
 
 
 (defun ewo-int-getlevel (cattree pos)
-  "Get the category level given a category tree."
+  "Get the category level given a path CATTREE. Starts the search
+at position POS."
   (if (string-match "/" cattree pos)
       (+ 1 (ewo-int-getlevel cattree (+ pos (match-end 0))))
     0))
 
 (defun ewo-get-level (filename)
-  "Get file level from root. Used to determine the value of the
-template variable `ewo:catlevel'."
+  "Get file level from root. FILENAME is the pathname of the
+file. Used to determine the value of the template variable
+`ewo:catlevel'."
   (let* ((full-root (expand-file-name (plist-get ewo:current-config :root-dir)))
 	 (regex (concat full-root  
 			"\\(\\(/[-_[:alpha:]0-9]+\\)+\\)?/[-_[:alpha:]0-9]+\\.org")))
@@ -660,77 +663,57 @@ template variable `ewo:catlevel'."
 (defun ewo-get-catname (channel)
   "Return the category name of the current document as a string,
 or an empty string if this document is not in a category (root
-index case)."
+index case). 
+
+CHANNEL is the communication channel of the org publishing
+process."
   (let ((name (plist-get channel :ewo-cat-name)))
     (if name name "")))
 
-;; needs more thinking : the breadcrumb have to consider the current
-;; category active when we are on the index page of the category, but
-;; what if we are in the category but not on the index file ? Do we
-;; create a special status for the subdirectories of the category ? ->
-;; do we plan subcategories ?
-;;
-;; Pros : more clean organization
-;; Cons : less flexibility.
-;;
-;; In the meantime, all the architecture to include template functions
-;; which need for the communication channel is ready.
 
-;; (defun ewo-breadcrumb (channel catname)
-;;   "Build a bootstrap breadcrumb as a string.  CHANNEL is a
-;; property list useed as a communication channel, CATNAME is the
-;; category name."  
-;;   (concat
-;;    "<ol class=\"breadcrumb\">"
-;;    (let ((pub-level (ewo-get-level (plist-get channel :input-file))))
-;;      (concat 
-;;       (cond ((= level 0) "<li class=\"active>")
-;;             (t           (concat "<li><a href=\"" (ewo-root-link pub-level) "\">")))
-;;       ewo-home-name
-;;       (if (/= level 0) "</a>" "")
-;;       "</li>"
-;;       (cond ((= level 1) "<li class=\"active\">")
-;;             (t           (concat "<li><a href=\"" (ewo-root-link pub-level) "/\">")))
-;;       catname
-;;       (if (/= level 1) "</a>" "")
-;;       "</li>"
-;;       ( 
-;; ))))
-  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Templating functions system
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar ewo-template-funcs '((ewo-rootlink . (:arity 1 :optargs t :addchannel nil))
-                             (+ . (:arity 2 :optargs t :addchannel nil))
-                             (- . (:arity 2 :optargs t :addchannel nil))
-                             (* . (:arity 2 :optargs t :addchannel nil))
-                             (/ . (:arity 2 :optargs t :addchannel nil))
+(defvar ewo-template-funcs '((ewo-filetags . (:arity 1 :optargs t :addchannel t))
+                             (ewo-rootlink . (:arity 1 :optargs nil :addchannel nil))
+                             (+ . (:arity 2 :optargs nil :addchannel nil))
+                             (- . (:arity 2 :optargs nil :addchannel nil))
+                             (* . (:arity 2 :optargs nil :addchannel nil))
+                             (/ . (:arity 2 :optargs nil :addchannel nil))
                              (% . (:arity 2 :optargs nil :addchannel nil))
                              (mod . (:arity 2 :optargs nil :addchannel nil))
                              (1+ . (:arity 1 :optargs nil :addchannel nil))
                              (1- . (:arity 1 :optargs nil :addchannel nil))
                              (quote . (:arity 1 :optargs nil :addchannel nil)))
-  "Safe functions and their arity usable in templates.
+  "Safe functions for \"<lisp>\" templates.
 
-The property list associated to each function contains the following entries
+This is a association list where each element has the form (FUNC
+. PROPS), where func is the symbol represention the function, and
+PROPS is a property list associated to each function.  PROPS
+contains the following entries :
 
-`:arity' : an integer specifying the arity of the function (mandatory args).
+`:arity' : an integer specifying the arity of the
+function (mandatory args).
 
 `:optargs' : a boolean indicating wether this function accepts
 optionnal arguments.
 
 `:addchannel' : a boolean indicating if the communication channel
-should be passed as first arg to the function.
-")
+should be passed as first arg to the function (not counted in arity).")
 
 (defvar ewo-template-vars '(ewo:catlevel ewo:catname)
   "List of variables which can be safely used in templates.")
 
 
 (defun ewo-secure-callp (expr)
-  "Check if EXPR is a n authorized function call.
+  "Check if EXPR is an authorized function call.
 
 Return the EXPR on success, with modified args if function needs
 the communication channel, in which case the channel is added as
-first arg. Return `nil' otherwise."
+first arg. Return nil otherwise."
   (let* ((funcname (car expr))
          (args     (cdr expr))
          (funcentry (assq funcname ewo-template-funcs)))
@@ -750,7 +733,7 @@ first arg. Return `nil' otherwise."
 (defun ewo-secure-argsp (args)
   "Check if the ARGS of a function call are safe.
 
-Return the ARGS, or `nil' otherwise."
+Return the ARGS, or nil otherwise."
   (if (null args)
       '()
     (when (ewo-secure-expressionp (car args))
@@ -760,7 +743,7 @@ Return the ARGS, or `nil' otherwise."
 (defun ewo-secure-varp (expr)
   "Check if EXPR is an authorized variable.
 
-Return the EXPR upon success, `nil' otherwise. "
+Return the EXPR upon success, nil otherwise. "
   (when (memq expr ewo-template-vars) expr))
 
 (defun ewo-secure-expressionp (expr)
@@ -773,14 +756,14 @@ conform to the following grammar:
 
 <expressionlist> ::= <expressionlist> <expression> | 
 
-<fun> must be a known function. arity is checked (see `ewo-secure-callp')
+<fun> must be a known function. arity is checked (see function `ewo-secure-callp')
 
-<var> must be a known variable name (see `ewo-secure-varp')
+<var> must be a known variable name (see function `ewo-secure-varp')
 
 <constants> are numbers or strings
 
-Return the expression, possibly modified (see `ewo-secure-callp')
-if it is secure, or `nil' otherwise.
+Return the expression, possibly modified (see function `ewo-secure-callp')
+if it is secure, or nil otherwise.
 "
   (cond 
    ((listp expr)
@@ -800,31 +783,6 @@ if it is secure, or `nil' otherwise.
 ;; hack. It highlights the need for a cleaner mechanism, like an
 ;; extension of the html-export backend.
 
-(defun ewo-html--toc-text (toc-entries)
-  "Return content of a toc, as a string.  TOC-ENTRIES is an alist
-where key is an entry title, as a string, and value is its
-relative level, as an integer."
-  (let* ((prev-level (1- (cdar toc-entries)))
-	 (start-level prev-level))
-    (concat
-     (mapconcat
-      (lambda (entry)
-	(let ((headline (car entry))
-	      (level (cdr entry)))
-	  (concat
-	   (let* ((cnt (- level prev-level))
-		  (times (if (> cnt 0) (1- cnt) (- cnt))))
-	     (setq prev-level level)
-	     (concat
-	      (org-html--make-string
-	       times (cond ((> cnt 0) "\n<ul>\n<li>")
-			   ((< cnt 0) "</li>\n</ul>\n")))
-	      (if (> cnt 0) "\n<ul>\n<li>" "</li>\n<li>")))
-	   headline)))
-      toc-entries "")
-     (org-html--make-string (- prev-level start-level) "</li>\n</ul>\n"))))
-
-
 (defun ewo-html-toc (depth info)
   "Build the toc with the specified DEPTH. INFO is a property
 list used as a communication channel."
@@ -838,9 +796,10 @@ list used as a communication channel."
       (ewo-html--toc-text toc-entries))))
 
 (defun ewo-html--toc-text (toc-entries)
-  "Return content of a toc, as a string.  TOC-ENTRIES is an alist
-where key is an entry title, as a string, and value is its
-relative level, as an integer."
+  "Return content of a toc, as a string.  TOC-ENTRIES is an
+alist, each element having the form (TITLE . LEVEL), where TITLE
+is a string reprensenting an entry title, and LEVEL is an integer
+reprenting its relative level."
   (let* ((prev-level (1- (cdar toc-entries)))
 	 (start-level prev-level))
     (concat
@@ -897,7 +856,7 @@ plist used as a communication channel."
     (concat 
      "<header>\n"
 "  <nav class=\"" ewo-navbar-class "\">
-    <div class=\"container-fluid\">
+    <div class=\"" ewo-navbar-container "\">
       <div class=\"navbar-header\">
         <button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#navbar\" aria-expanded=\"false\" aria-controls=\"navbar\">
           <span class=\"sr-only\">Toggle navigation</span>
@@ -908,7 +867,7 @@ plist used as a communication channel."
         <a class=\"navbar-brand\" href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\">" ewo-name "</a>
       </div>
       <div id=\"navbar\" class=\"navbar-collapse collapse\">
-        <ul class=\"nav navbar-nav\">
+        <ul class=\"" ewo-navbar-ul "\">
           <li" (if (not name) " class=\"active\"" "") "><a href=\"" (if name "<lisp>(ewo-rootlink ewo:catlevel)</lisp>" "./") "\"><span class=\"glyphicon glyphicon-home\" aria-hidden=\"true\"></span> " ewo-home-name "</a></li>\n" 
 	  (ewo-categories-nav name ewo:categories)
           (let ((depth (plist-get info :with-toc)))
@@ -921,26 +880,39 @@ plist used as a communication channel."
   </nav>
 </header>")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Filters
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filter system : allows the execution of lisp formulae included in
 ;; <lisp></lisp> constructs.
   
-(defun ewo-filter-prepost (fstring backend channel)
+(defun ewo-filter-lisp-exec (fstring backend channel)
   "An HTML filter which execute lisp functions included in <lisp>...</lisp> constructs.
 Only allowed functions with allowed args are possible, and args
-must be in a list of allowed variables."
+must be in a list of allowed variables.
+
+FSTRING is the string containing the HTML content of a pagen
+BACKEND is the name of the publishing backend, and CHANNEL is the
+communication channel."
   (when (eq backend 'ewo)
+    ;; (message "=========================================== lisp-exec-filter")
     ;; build the environment of the function calls (i.e. variables available to the user in templates
     (let ((ewo:catlevel (ewo-get-level (plist-get channel :input-file)))
-          (ewo:catname  (ewo-get-catname channel))
-	  (search-start nil))
-      (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring search-start)
+          (ewo:catname  (ewo-get-catname channel)))
+      (while (string-match "<lisp>\\(.+?\\)</lisp>" fstring nil)
 	(let* ((start (match-beginning 1))
 	       (end   (match-end 1))
 	       (strform (substring fstring start end))
-	       (form (read strform)))
+	       (form (car (read-from-string strform))))
+;;          (message "string form : %s" strform)
+;;          (message "form : %s" form)
           (let ((final-form (ewo-secure-expressionp form)))
+;;            (message "final form : %s" final-form)
             (if final-form
                 (let* ((fun (list 'lambda ewo-template-vars final-form))
                        (args (mapcar (lambda (v) (symbol-value v)) ewo-template-vars))
@@ -949,9 +921,56 @@ must be in a list of allowed variables."
                                  (substring fstring 0 (- start 6)) ; jq avant <lisp>
                                  result
                                  (substring fstring (+ end 7) nil)))) ; on commence après </lisp>
-              (error "unsecure or malformed expression : %s" strform)))
-	  (setq search-start end)))))
+              (error "unsecure or malformed expression : %s" strform)))))))
   fstring)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; filter system : allows the inclusion of blocks based on the type of
+;; a category.
+
+(defun ewo-filter-cat-type (fstring backend channel)
+  "An HTML filter which conditionnally include blocks, depending
+on the type of the category containing the file. It processes
+two types of blocks :
+
+\"<ewo-blog></ewo-blog>\" : These blocks are included if we are in a
+file from a category of type blog.
+
+\"<ewo-static></ewo-static>\" : These blocks are included if we are
+in a file from a category of type static.
+
+FSTRING is the string containing the HTML content of a pagen
+BACKEND is the name of the publishing backend, and CHANNEL is the
+communication channel."
+  (when (not (eq backend 'ewo)) fstring)
+  ;; (message "=========================================== cat type-filter")
+  (let ((catname (ewo-get-catname channel)))
+    (when (null catname) fstring)
+    (let ((cattype (plist-get (cdr (assoc-string catname ewo-categories)) :type)))
+      (while (string-match "\\(<ewo-blog>\\)\\(\\s-*.*?\\(?:\n.*?\\)*?\\)\\(</ewo-blog>\\)"
+                             fstring)
+        (let* ((otag-start (match-beginning 1))
+               (ctag-end   (match-end 3))
+               (content-start (match-beginning 2))
+               (content-end   (match-end 2)))
+          (setq fstring (concat
+                         (substring fstring 0 otag-start)
+                         (when (eq cattype 'blog)
+                           (substring fstring content-start content-end))
+                         (substring fstring ctag-end)))))
+      (while (string-match "\\(<ewo-static>\\)\\(\\s-*.*?\\(?:\n.*?\\)*?\\)\\(</ewo-static>\\)"
+                           fstring)
+        (let* ((otag-start (match-beginning 1))
+               (ctag-end   (match-end 3))
+               (content-start (match-beginning 2))
+               (content-end   (match-end 2)))
+          (setq fstring (concat
+                         (substring fstring 0 otag-start)
+                         (when (eq cattype 'static)
+                           (substring fstring content-start content-end))
+                         (substring fstring ctag-end)))))))
+  fstring)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Header filter
@@ -961,27 +980,36 @@ must be in a list of allowed variables."
   "Headers and section processing:
 
 - if containing outline div is of class panel : 
-  1. surround h[2-5] headers with div class panel-header,
-  2. add class panel-body to de div class outline-text-[2-5].
-  Warning ! This processing relies on the fact that the section has a
-  property HTML_CONTAINER_CLASS which value is the bootstrap panel
-  classes.
 
-- Surround sections with published BOOSTRAP_COLUMN property with
-  a <div> with the corresponding class (use bootstrap column
-  classes, like col-md-*, col-sm-* ...). 
+  1. surround \"<h[2-5]>\" headers with \"<div
+     class=\"panel-header\">\",
 
-- Prefix sections with published BOOTSTRAP_ROW_BEGIN property
-  with a <div class=\"row\">.
+  2. add \"class=\"panel-body\"\" to de \"<div
+     class=\"outline-text-[2-5]\">\".  Warning ! This processing
+     relies on the fact that the section has a property
+     \"HTML_CONTAINER_CLASS\" which value is the bootstrap panel
+     classes.
 
-- Suffix sections with published BOOTSTRAP_ROW_END property
-  with a <div class=\"row\">.
+- Surround sections with published \"BOOSTRAP_COLUMN\" property
+  with a \"<div>\" with the corresponding class (use bootstrap column
+  classes, like \"col-md-*\", \"col-sm-*\" ...).
+
+- Prefix sections with published \"BOOTSTRAP_ROW_BEGIN\" property
+  with a \"<div class=\"row\">\".
+
+- Suffix sections with published \"BOOTSTRAP_ROW_END\" property
+  with a \"<div class=\"row\">\".
 
 The processing of bootstrap row and columns suppose that property
 drawer filters are called before headline filters, as the ewo
 property drawer filter set flags indicating the presence of
-columns and row begin or end."
+columns and row begin or end.
+
+FSTRING is the string containing the HTML content of a pagen
+BACKEND is the name of the publishing backend, and CHANNEL is the
+communication channel."
   (when (not (eq backend 'html)) fstring) 
+  ;; (message "=========================================== headline-filter")
   (let ((re "^\\(<div.+class=\"outline-[2-5].+panel.+\">[[:space:]]*\n\\)\\(<h[2-5].+>.+</h[2-5]>[[:space:]]*\n\\)\\(\\(.\\|\n\\)+</div>\\)\\(\n*\\)$"))
     (when (string-match re fstring)
       (let ((start-outline-2 (match-beginning 1))
@@ -1047,10 +1075,15 @@ column.")
 ;; careful : relies on the fact that this filter will be applied before
 ;; headline filter  (`ewo-filter-headline').
 (defun ewo-filter-drawer (fstring backend channel)
-  "Extract information from BOOTSTRAP_COLUMN, BOOTSTRAP_ROW_BEGIN
-and BOOTSTRAP_ROW_END properties. This information will be used
-by the headline filter `ewo-filter-headline'."
+  "Extract information from \"BOOTSTRAP_COLUMN\", \"BOOTSTRAP_ROW_BEGIN\"
+and \"BOOTSTRAP_ROW_END\" properties. This information will be used
+by the headline filter `ewo-filter-headline'.
+
+FSTRING is the string containing the HTML content of a pagen
+BACKEND is the name of the publishing backend, and CHANNEL is the
+communication channel."
   (when (not (eq backend 'html)) nil)
+  ;; (message "=========================================== drawer-filter")
   (when (string-match "^BOOTSTRAP_COLUMN:[[:space:]]+\\(.+\\)[[:space:]]*$" fstring)
     (setq ewo-bootstrap-column (match-string 1 fstring)))
   (when (string-match "^BOOTSTRAP_ROW_BEGIN:[[:space:]]+.+[[:space:]]*$" fstring)
@@ -1064,7 +1097,16 @@ by the headline filter `ewo-filter-headline'."
 ;; link filter
 
 (defun ewo-filter-link (fstring backend channel)
+  "Apply transformations to HTML links. The transformations are
+performed according to the value of the variables
+`ewo-ext-link-addition-type', `ewo-ext-link-addition',
+`ewo-int-link-addition-type' and `ewo-int-link-addition'.
+
+FSTRING is the string containing the HTML content of a pagen
+BACKEND is the name of the publishing backend, and CHANNEL is the
+communication channel."
   (when (not (eq backend 'html)) nil)
+  ;; (message "=========================================== link-filter")
   (if (string-match "href=\"[a-z]+://" fstring)
       ;; external link
       (cond ((eq ewo-ext-link-addition-type 'anchor) 
@@ -1097,7 +1139,8 @@ by the headline filter `ewo-filter-headline'."
 (setq dbg:lst '())
 
 (defun ewo-prepare-blog-publication (props)
-  "Prepares the publication of a blog category."
+  "Prepares the publication of a blog category. PROPS is the
+property list of the configuration od the category."
   (let ((cat       (plist-get props :ewo-cat-name)))
     (let* ((flist     (org-publish-get-base-files (cons cat props)))
            (dir     (plist-get props :base-directory)))
@@ -1122,14 +1165,18 @@ by the headline filter `ewo-filter-headline'."
       (ewo:blog-gen-cat-index dir cat))))
 
 (defun ewo-prepare-blog-index (props)
-  "Prepares the global list of blog articles"
+  "Prepares the global list of blog articles. PROPS is the
+property list containing the pubishing configuration."
   (let ((dir (plist-get props :base-directory)))
     (ewo:gen-blog-index dir)))
 
 (defun ewo-prepare-tag-collect (props)
-  "Collect TAG keyword content in file, and add it to the global
-collection. see `ewo-tags' variable for the structure of the
-collection."
+  "Collect org \"FILETAGS\" keyword content in file, and add it
+to the global collection. see variable `ewo:tags' for the
+structure of the collection.
+
+PROPS is the property list containing the pubishing
+configuration."
 
   (let ((flist (org-publish-get-base-files (cons "orgfiles" props)))
         (dir   (plist-get props :base-directory)))
@@ -1155,7 +1202,10 @@ collection."
 
 (defun ewo-prepare-tag-files (props)
   "Generate the tags.org file and the index files for each tag
-from the `ewo:tags' tree."
+from the `ewo:tags' tree.
+
+PROPS is the property list containing the pubishing
+configuration."
   (ewo:clean-tag-files)
   (let* ((filename (expand-file-name "tags.org" (plist-get ewo:current-config :root-dir)))
          (visiting (find-buffer-visiting filename))
@@ -1279,7 +1329,7 @@ the addition of the <div> surrounding all the body."
   :filters-alist '((:filter-link . ewo-filter-link)
                    (:filter-property-drawer . ewo-filter-drawer)
                    (:filter-headline . ewo-filter-headline)
-                   (:filter-final-output . ewo-filter-prepost)))
+                   (:filter-final-output . (ewo-filter-cat-type ewo-filter-lisp-exec))))
 
 ;;;###autoload
 (defun ewo-html-publish-to-html (plist filename pub-dir)
@@ -1330,7 +1380,9 @@ Return output file name."
                   (message "ewo publishing complete"))
               (error "bad ewo config"))))
       (error "ewo config not found")))
-  (setq ewo:current-config nil))
+  (setq ewo:current-config nil)
+  (avl-tree-clear ewo:tags)
+  (setq ewo:blog-global-article-list '()))
 
 
 (provide 'ox-ewo)

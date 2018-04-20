@@ -35,8 +35,7 @@
 
 
 (defun ewo:fix-timestamp-string (date-string)
-  "This is a piece of code copied from org-page.
-Returns yyyy-mm-dd format of `DATE-STRING'.
+  "Return \"yyyy-mm-dd\" format of `DATE-STRING'.
 
 For example:
 
@@ -46,7 +45,8 @@ For example:
 
 Any \"day of week\", or \"time\" info, or any other parts of the string, are
 discarded.
-Code detail: URL `http://xahlee.org/emacs/elisp_parse_time.html'"
+Code detail: URL `http://xahlee.org/emacs/elisp_parse_time.html'.
+This code is copied from org-page."
   (let ((date-str date-string)
         date-list year month date yyyy mm dd)
     (setq date-str (replace-regexp-in-string "^ *\\(.+\\) *$" "\\1" date-str))
@@ -129,7 +129,8 @@ T[0-9][0-9]:[0-9][0-9]" date-str)
 
 ;; TODO should not be needed anymore. check
 (defun ewo:compare-standard-date (date1 date2)
-  "Compare two standard ISO 8601 format dates, format is as below:
+  "Compare two standard ISO 8601 format dates DATE1 and
+DATE2. format is as below:
 
 2012-08-17
 
@@ -159,9 +160,11 @@ Code borrowed from org-page."
 
 
 (defun ewo:read-org-option (option)
-  "Read option value of org file opened in current buffer.
+  "Read OPTION value of org file opened in current buffer.
 e.g:
+
 #+TITLE: this is title
+
 will return \"this is title\" if OPTION is \"TITLE\""
   (let ((match-regexp (org-make-options-regexp `(,option))))
     (save-excursion
@@ -171,7 +174,7 @@ will return \"this is title\" if OPTION is \"TITLE\""
 
 (defun ewo:read-org-block (blname)
   "Read the data in a block in the current buffer. Return nil if
-match is not found."
+match is not found. BLNAME is the name of the block."
   (let* ((begin  (concat "^\\s-*#\\+[bB][eE][gG][iI][nN]_" blname "\\s-*"))
          (inside "\\(.*\\(?:\n.*\\)*?\\)")
          (end    (concat "\n\\s-*#\\+[eE][nN][dD]_" blname)))
@@ -204,7 +207,5 @@ returned."
       (if (or (null l) (= n 0))
           '()
         (cons (car l) (loop (cdr l) (- n 1)))))))
-          
-
 
 (provide 'ewo-util)
