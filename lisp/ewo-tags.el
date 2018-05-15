@@ -112,7 +112,7 @@ the files for each tag in the tags directory."
 (defun ewo:clean-tag-files ()
   "Clean the directory containing tag files. Create it if it does
 not exist."
-  (let ((dir (concat (plist-get ewo:current-config :root-dir) "/tags")))
+  (let ((dir (concat ewo-root-dir "/tags")))
     (if (not (file-exists-p dir))
         (make-directory dir) 
       (let ((ls (directory-files dir t)))
@@ -125,7 +125,7 @@ not exist."
   "Verify that a TAG is a valid tag. LEVEL is the level of the category"
   (let ((tagfile-link (concat (ewo-rootlink level) "tags/" (ewo:tagfile tag ".html")))
         (tagfile-test (concat
-                       (file-name-as-directory (plist-get ewo:current-config :root-dir))
+                       (file-name-as-directory ewo-root-dir)
                        "tags/"
                        (ewo:tagfile tag ".org"))))
     (when (file-exists-p tagfile-test)

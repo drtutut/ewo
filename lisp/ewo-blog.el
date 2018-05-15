@@ -283,7 +283,13 @@ by FMT. Returns a string."
           (insert (plist-get (cdr a) :excerpt))
           (newline 2))
         (save-buffer)))))
-            
+
+(defun ewo:cat-is-blog-p (catname)
+  "Return t if category CATNAME is a blogging category, nil
+otherwise."
+  (let* ((catinfo (assoc-string catname ewo-categories)))
+    (eq (plist-get (cdr catinfo) :type) 'blog)))
+         
 
 
 

@@ -4,7 +4,7 @@
 
 * Introduction
 
-  This is EWO 3.1
+  This is EWO 3.2
 
   EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
@@ -22,12 +22,22 @@
   EWO started as a personnal project : allows the generation of my
   professionnal web pages from orgmode documents. 
 
-  Version 2.0 is a partial rewrite of the original project, to define
+  Release 2.0 is a partial rewrite of the original project, to define
   EWO as a derived back-end of the org html back-end.
 
-  Version 3.0 introduces blogging categories.
+  Release 3.0 introduces blogging categories.
 
-  Version 3.1 introduces a tagging system to classify blog articles.
+  Release 3.1 introduces a tagging system to classify blog articles.
+
+  Release 3.2 introduces a very crude templating mechanism. It also
+  corrects some bugs.
+
+* WARNING
+
+  Starting with release 3.2, we come back to a single root directory
+  for the sources of a site. It is defined in the ~ewo-root-dir~
+  variable. Thus, if a site configuration is defined for a former
+  release of ewo, check it !
 
 * Installation
 ** Dependencies / Incompatibilities
@@ -107,6 +117,15 @@
 
    The definition of this variable is not mandatory.
 
+** variable ~ewo-root-dir~ 
+
+   Root directory of the org-source of the website. That is, the full
+   path of the directory containing the org files containing the pages
+   of your future site, along with the auxiliary files like css
+   stylesheets, javascript files, images\dots
+
+   The definition of this variable is mandatory.
+
 ** variable =ewo-configurations=
 
    Association list of alternative publishing configurations for
@@ -116,12 +135,6 @@
    keys and values, which specifies the configuration values. The
    possible configuration values are:
 
-   - ~:root-dir~ :: Root directory of the org-source of the
-                    website. That is, the full path of the directory
-                    containing the org files containing the pages of
-                    your future site, along with the auxiliary files
-                    like css stylesheets, javascript files,
-                    images\dots
    - ~:publish-dir~ :: The publishing directory of the website. This
                        variable contains the full path where your
                        project will be exported in its html form. It
@@ -316,6 +329,10 @@
 
    Date format in toc headings.
 
+** variable =ewo-template-dir=
+
+   The directory where article templates reside.
+
 ** Example
    :PROPERTIES:
    :CUSTOM_ID: 6fefa485-7152-4af4-b761-3f19ee2ee44f
@@ -323,9 +340,9 @@
    
 #+BEGIN_SRC emacs-lisp
   (defvar ewo-name "Retry/Abort")
+  (defvar ewo-root-dir "~/Documents/www/MySite/org")
   (defvar ewo-configurations
     '(("default"
-       :root-dir "~/Documents/www/MySite/org"
        :publish-dir "~/public_html")))
 
   (defvar ewo-categories
@@ -809,4 +826,17 @@
 
   To publish a site, invoke the ~ewo-publish~ function. This function
   asks for a configuration id (see ~ewo-configurations~) doc.
+
+* Templating
+
+  You can define a directory which will contain /templates/ using the
+  custom variable ~ewo-template-dir~. Actually, a template is
+  essentially a boilerplate org file containing the skeleton of the
+  body of an article.
+
+  These templates are used by the interactive function
+  ~ewo-new-article~ whose aim is to create a new article buffer. This
+  function creates all the necessary headers (~#+TITLE:~, etc.) and
+  then insert the choosen template.
+
 

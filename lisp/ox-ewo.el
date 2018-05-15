@@ -72,6 +72,7 @@
 (require 'ewo-util)
 (require 'ewo-blog)
 (require 'ewo-tags)
+(require 'ewo-template)
 
 ;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
 ;; <lisp></lisp> pour vraiment avoir du lexical binding.
@@ -94,9 +95,13 @@
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-root-dir "~/Documents/www/MonSite/org"
+  "Root directory of the org-source of the website."
+  :group 'ewo
+  :type 'directory)
+
 (defcustom ewo-configurations
   '(("default"
-     :root-dir "~/Documents/www/MonSite/org"
      :publish-dir "~/public_html"))
   "Association list of alternative publishing configurations for
 ewo. Each elements has the form (KEY . VALUE), where KEY is a
@@ -104,10 +109,6 @@ string, uniquely identifying the configuration, and VALUE is a
 well formed property list with an event number of elements,
 alternating keys and values, which specifies the configuration
 values. The possible configuration values are:
-
-    `:root-dir' 
-
-    Root directory of the org-source of the website.
 
     `:publish-dir'
 
@@ -342,6 +343,14 @@ keyword can be:
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-template-dir "template"
+  "Template directory, relative to root dir. See variable
+`ewo-root-dir'."
+  :group 'ewo
+  :type 'string)
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; internal variables
@@ -392,7 +401,7 @@ processing of a new category.")
 Each element ot the tree consists in a list. the car of this list
 is a string representing a tag. The cdr is a list of
 pairs (FILENAME . TITLE) (file names are relative to the
-`:root-dir' property of the current configuration).")
+variable `ewo-root-dir').")
 
 (defvar ewo:categories nil
   "The internal table of categories. It contains the content of
@@ -649,7 +658,7 @@ at position POS."
   "Get file level from root. FILENAME is the pathname of the
 file. Used to determine the value of the template variable
 `ewo:catlevel'."
-  (let* ((full-root (expand-file-name (plist-get ewo:current-config :root-dir)))
+  (let* ((full-root (expand-file-name ewo-root-dir))
 	 (regex (concat full-root  
 			"\\(\\(/[-_[:alpha:]0-9]+\\)+\\)?/[-_[:alpha:]0-9]+\\.org")))
     (if (string-match regex filename)
@@ -1194,7 +1203,7 @@ configuration."
                       (unless (null tags)
                         (ewo:add-to-tag-map
                          (car tags) title
-                         (file-relative-name file (plist-get ewo:current-config :root-dir)))
+                         (file-relative-name file ewo-root-dir))
                         (loop (cdr tags))))))
                 (save-buffer))
                 
@@ -1207,7 +1216,7 @@ from the `ewo:tags' tree.
 PROPS is the property list containing the pubishing
 configuration."
   (ewo:clean-tag-files)
-  (let* ((filename (expand-file-name "tags.org" (plist-get ewo:current-config :root-dir)))
+  (let* ((filename (expand-file-name "tags.org" ewo-root-dir))
          (visiting (find-buffer-visiting filename))
          (buffer (or visiting (find-file-noselect filename))))
     (unwind-protect
@@ -1369,7 +1378,7 @@ Return output file name."
   (let ((config-props ewo:current-config))
     (if config-props
         (save-excursion
-          (let* ((root-dir (plist-get config-props :root-dir))
+          (let* ((root-dir ewo-root-dir)
                  (publish-dir (plist-get config-props :publish-dir)))
             (if (and root-dir publish-dir)
                 (progn

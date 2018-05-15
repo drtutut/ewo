@@ -20,3 +20,11 @@ Version 3.1
 
         - Corrections / additions in the manual
         - added a tagging system.
+
+Version 3.2
+===========
+
+        - Going back to a single root for publication (root does not
+          depend of the publication configuration.
+        - added a templating mechanism along with a "ewo-new-article"
+          function which creates a new article.
