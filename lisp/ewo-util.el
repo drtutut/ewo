@@ -191,8 +191,10 @@ match is not found. BLNAME is the name of the block."
         (lines (split-string text "\n" nil "[[:blank:]]+")))
     (nlet loop ((l lines))
       (when (not (null l))
-        (when (not (null (cdr l)))
-          (setq out (concat out (car l) "\n")))
+        (if (not (null (cdr l)))
+	    (setq out (concat out (car l) "\n"))
+	  (setq out (concat out (car l))))
+	
         (loop (cdr l))))
     out))
   

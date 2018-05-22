@@ -87,7 +87,7 @@ if it does not exist."
 `ewo-excerpt-size' long."
   (let* ((chapo (ewo:read-org-block "ewo_head"))
          (exc   (if chapo (substring chapo 0 (min ewo-excerpt-size (length chapo))) "")))
-    (concat exc (if (string= exc "") "" "…"))))
+    (concat exc (if (or (string= exc "") (< (length chapo) ewo-excerpt-size)) "" "…"))))
 
 
 (defun ewo:add-to-article-lists (id date title excerpt file)
