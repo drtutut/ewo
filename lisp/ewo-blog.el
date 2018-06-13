@@ -273,7 +273,7 @@ by FMT. Returns a string."
             (buf    (car info))
             (level  (cdr info)))
         (set-buffer buf)
-        (dolist (a ewo:blog-global-article-list)
+        (dolist (a firsts)
           (insert (format "%s [[file:%s][%s]]"
                           (make-string (+ 1 level) ?*)
                           (file-relative-name (plist-get (cdr a) :file) dir)

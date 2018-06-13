@@ -1186,28 +1186,29 @@ structure of the collection.
 
 PROPS is the property list containing the pubishing
 configuration."
-
-  (let ((flist (org-publish-get-base-files (cons "orgfiles" props)))
-        (dir   (plist-get props :base-directory)))
-    (dolist (file flist)
-      (when (not (ewo:category-indexp file (plist-get props :base-directory)))
-        (let* ((visiting (find-buffer-visiting file))
-               (buffer (or visiting (find-file-noselect file))))
-          (unwind-protect
-              (with-current-buffer buffer
-                (let ((tags-raw (ewo:read-org-option "FILETAGS"))
-                      (title    (ewo:read-org-option "TITLE"))
-                      (pub      (ewo:read-org-option "EWO_STATE")))
-                  (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
-                    (nlet loop ((tags (split-string tags-raw ":" t)))
-                      (unless (null tags)
-                        (ewo:add-to-tag-map
-                         (car tags) title
-                         (file-relative-name file ewo-root-dir))
-                        (loop (cdr tags))))))
-                (save-buffer))
-                
-            (unless visiting (kill-buffer buffer))))))))
+  ;; test 1 : replace "orgfiles" with the category name, because it seems to be a nonsense.
+  (let ((cat (plist-get props :ewo-cat-name)))
+    (let ((flist (org-publish-get-base-files (cons cat props)))
+	  (dir   (plist-get props :base-directory)))
+      (dolist (file flist)
+	(when (not (ewo:category-indexp file (plist-get props :base-directory)))
+	  (let* ((visiting (find-buffer-visiting file))
+		 (buffer (or visiting (find-file-noselect file))))
+	    (unwind-protect
+		(with-current-buffer buffer
+		  (let ((tags-raw (ewo:read-org-option "FILETAGS"))
+			(title    (ewo:read-org-option "TITLE"))
+			(pub      (ewo:read-org-option "EWO_STATE")))
+		    (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
+		      (nlet loop ((tags (split-string tags-raw ":" t)))
+			(unless (null tags)
+			  (ewo:add-to-tag-map
+			   (car tags) title
+			   (file-relative-name file ewo-root-dir))
+			  (loop (cdr tags))))))
+		  (save-buffer))
+	      
+	      (unless visiting (kill-buffer buffer)))))))))
 
 (defun ewo-prepare-tag-files (props)
   "Generate the tags.org file and the index files for each tag
@@ -1226,7 +1227,7 @@ configuration."
           (ewo:tagfile-content)
           (save-buffer))
       (unless visiting (kill-buffer)))))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; Main translation funtions  
