@@ -74,8 +74,6 @@
 (require 'ewo-tags)
 (require 'ewo-template)
 
-;; pas bon : ils faudrait revoir le mécanisme d'évaluation des balises
-;; <lisp></lisp> pour vraiment avoir du lexical binding.
 (setq lexical-binding t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -523,9 +521,7 @@ of the project is ROOT and the publishing directory is PUBLISH."
                  :ewo-cat-name name)))
     (let ((prepl '()))
       (when (equal type 'blog)
-        (setq prepl (cons 'ewo-prepare-blog-publication prepl))
-                                        ; TODO perhaps add a global option. Actually : all blog files
-        (setq prepl (cons 'ewo-prepare-tag-collect prepl)))
+        (setq prepl (cons 'ewo-prepare prepl)))
       (if (not (null prepl))
           (append res (list :preparation-function prepl))
         res))))
@@ -1145,70 +1141,12 @@ communication channel."
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq dbg:lst '())
-
-(defun ewo-prepare-blog-publication (props)
-  "Prepares the publication of a blog category. PROPS is the
-property list of the configuration od the category."
-  (let ((cat       (plist-get props :ewo-cat-name)))
-    (let* ((flist     (org-publish-get-base-files (cons cat props)))
-           (dir     (plist-get props :base-directory)))
-      (setq ewo:blog-category-article-list '())
-      ;; process files
-      (dolist (file flist)
-        (when (not (ewo:category-indexp file (plist-get props :base-directory)))
-          (let* ((visiting (find-buffer-visiting file))
-                 (buffer   (or visiting (find-file-noselect file))))
-            (unwind-protect
-                (with-current-buffer buffer
-                  (let ((state (ewo:read-org-option "EWO_STATE")))
-                    (when (string= state "published")
-                      (let* ((date    (ewo:get-buffer-date))
-                             (title   (ewo:get-buffer-title))
-                             (id      (ewo:get-buffer-id))
-                             (excerpt (ewo:get-buffer-excerpt)))
-                        (ewo:add-to-article-lists id date title excerpt file))))
-                  (save-buffer))
-              (unless visiting (kill-buffer buffer)))))) 
-      ;; generate category index
-      (ewo:blog-gen-cat-index dir cat))))
-
 (defun ewo-prepare-blog-index (props)
   "Prepares the global list of blog articles. PROPS is the
 property list containing the pubishing configuration."
   (let ((dir (plist-get props :base-directory)))
     (ewo:gen-blog-index dir)))
 
-(defun ewo-prepare-tag-collect (props)
-  "Collect org \"FILETAGS\" keyword content in file, and add it
-to the global collection. see variable `ewo:tags' for the
-structure of the collection.
-
-PROPS is the property list containing the pubishing
-configuration."
-  ;; test 1 : replace "orgfiles" with the category name, because it seems to be a nonsense.
-  (let ((cat (plist-get props :ewo-cat-name)))
-    (let ((flist (org-publish-get-base-files (cons cat props)))
-	  (dir   (plist-get props :base-directory)))
-      (dolist (file flist)
-	(when (not (ewo:category-indexp file (plist-get props :base-directory)))
-	  (let* ((visiting (find-buffer-visiting file))
-		 (buffer (or visiting (find-file-noselect file))))
-	    (unwind-protect
-		(with-current-buffer buffer
-		  (let ((tags-raw (ewo:read-org-option "FILETAGS"))
-			(title    (ewo:read-org-option "TITLE"))
-			(pub      (ewo:read-org-option "EWO_STATE")))
-		    (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
-		      (nlet loop ((tags (split-string tags-raw ":" t)))
-			(unless (null tags)
-			  (ewo:add-to-tag-map
-			   (car tags) title
-			   (file-relative-name file ewo-root-dir))
-			  (loop (cdr tags))))))
-		  (save-buffer))
-	      
-	      (unless visiting (kill-buffer buffer)))))))))
 
 (defun ewo-prepare-tag-files (props)
   "Generate the tags.org file and the index files for each tag
@@ -1227,6 +1165,124 @@ configuration."
           (ewo:tagfile-content)
           (save-buffer))
       (unless visiting (kill-buffer)))))
+
+;;; preparation functions for blog indexing
+
+(defun ewo:init-cat-index (props cat)
+  (setq ewo:blog-category-article-list '()))
+
+(defun ewo:process-cat-index (props cat fname)
+  (let ((state (ewo:read-org-option "EWO_STATE")))
+    (when (string= state "published")
+      (let* ((date    (ewo:get-buffer-date))
+	     (title   (ewo:get-buffer-title))
+	     (id      (ewo:get-buffer-id))
+	     (excerpt (ewo:get-buffer-excerpt)))
+	(ewo:add-to-article-lists id date title excerpt fname)))))
+
+;;; preparation functions for tags
+
+(defun ewo:process-tags (props cat fname)
+  "Collect org \"FILETAGS\" keyword content in file, and add it
+to the global collection. see variable `ewo:tags' for the
+structure of the collection."
+  (let ((tags-raw (ewo:read-org-option "FILETAGS"))
+	(title    (ewo:read-org-option "TITLE"))
+	(pub      (ewo:read-org-option "EWO_STATE")))
+    (unless (or (null tags-raw) (null pub) (not (string= "published" pub)))
+      (nlet loop ((tags (split-string tags-raw ":" t)))
+	(unless (null tags)
+	  (ewo:add-to-tag-map
+	   (car tags) title
+	   (file-relative-name fname ewo-root-dir))
+	  (loop (cdr tags)))))))
+
+
+;;; unified preparation system
+
+(defvar ewo:prepare-funcs
+  '(("index"
+     :pre ewo:init-cat-index
+     :process ewo:process-cat-index
+     :post ewo:blog-gen-cat-index)
+    ("tags"
+     :pre nil
+     :process ewo:process-tags
+     :post nil))
+  "preparation functions, called becore the publication of a
+category. This is a list of lists. Each element of the list is a
+property list prefixed by a string id (unused for now). The
+property list has the following properties:
+
+:pre a function called before the loop on each file
+
+:process a function called on each file in the category, except
+the index. This function should operate on the current buffer
+! (which is unwind-protected) which contains the current blog
+article.
+
+:post a function called after the loop on each file
+
+The :pre function has two arguments (prefunc PROPS CAT): a PROPS
+list for the category, and the CAT name.
+
+The :process function has four arguments (processfunc PROPS CAT
+NAME) : a PROPS list for the category, the CAT name, and the NAME
+of the processed file.
+
+The :post function has for arguments (postfunc DIR CAT): DIR is
+the directory of the category, and CAT is the category name.")
+
+(defun ewo:prepare-pre (props cat)
+  "Call the preprocessing preparation functions. PROPS is the
+property list of the category, CAT is the category name."
+  (dolist (e ewo:prepare-funcs)
+    (let ((fun (plist-get (cdr e) :pre)))
+      (when fun
+	(funcall fun props cat)))))
+
+(defun ewo:prepare-process (props cat fname)
+  "Call the preparation functions. PROPS is the property list of
+the category, CAT is the category name. BUFFER is the buffer of
+the processed file and FNAME is the name of the file."
+  (dolist (e ewo:prepare-funcs)
+    (let ((fun (plist-get (cdr e) :process)))
+      (when fun
+	(funcall fun props cat fname)))))
+
+(defun ewo:prepare-post (dir cat)
+  "Call the postprocessing preparation functions. DIR is the
+directory of the category, CAT is the category name."
+  (dolist (e ewo:prepare-funcs)
+    (let ((fun (plist-get (cdr e) :post)))
+      (when fun
+	(funcall fun dir cat)))))
+
+
+(defun ewo-prepare (props)
+  "Call various preparation tasks on articles in blog
+categories. This avoids multiple visiting/closing of the same
+files.
+
+PROPS is the property list containing the pubishing
+configuration."
+  (let ((cat (plist-get props :ewo-cat-name)))
+    (let ((flist (org-publish-get-base-files (cons cat props)))
+	  (dir   (plist-get props :base-directory)))
+      (ewo:prepare-pre props cat)
+      (dolist (file flist)
+        (when (not (ewo:category-indexp file (plist-get props :base-directory)))
+        (when (not (ewo:category-indexp file (plist-get props :base-directory)))
+          (let* ((visiting (find-buffer-visiting file))
+                 (buffer   (or visiting (find-file-noselect file))))
+            (unwind-protect
+                (with-current-buffer buffer
+		  (ewo:prepare-process props cat file)
+                  (save-buffer))
+              (unless visiting (kill-buffer buffer)))))) 
+      ;; generate category index
+      (ewo:prepare-post dir cat)))))
+	  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
