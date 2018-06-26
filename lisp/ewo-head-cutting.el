@@ -2,7 +2,7 @@
 (defvar ewo:header-restriction
   '(link superscript subscript underline bold italic code verbatim strike-through latex-fragment radio-target target timestamp line-break entity footnote-reference))
 
-(defvar ewo:test-str1 "Voici un exemple de *paragraphe* qu'on va tenter de [[https://fr.wikipedia.org/wiki/Massacre_%C3%A0_la_tron%C3%A7onneuse][tronçonner] intelligemment\dots
+(defvar ewo:test-str1 "Voici un exemple de *paragraphe* qu'on va tenter de [[https://fr.wikipedia.org/wiki/Massacre_%C3%A0_la_tron%C3%A7onneuse][tronçonner] intelligemment\\dots
 
 /eh oui !/")
 
