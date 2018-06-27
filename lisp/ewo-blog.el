@@ -82,6 +82,13 @@ if it does not exist."
           (ewo:read-org-option "EWO_ARTICLE_ID"))
       uid)))    
 
+;;; TODO: Continuer ici
+(defun ewo:extract-excerpt (s)
+  "Extracts an excerpt of `ewo-excerpt-size' long from a string.
+
+Take care of the links, do not cut words.")
+  
+
 (defun ewo:get-buffer-excerpt ()
   "Read the ewo_head block, and return an excerpt of
 `ewo-excerpt-size' long."
