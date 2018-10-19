@@ -28,3 +28,21 @@ Version 3.2
           depend of the publication configuration.
         - added a templating mechanism along with a "ewo-new-article"
           function which creates a new article.
+
+Version 3.3
+===========
+
+        - printed representation representation of tags uses space in
+          place of underscores.
+        - blog: Corrections in excerpt generation.
+        - corrected : bad number of articles for global index. category
+          browsing for tags with wrong category name.
+        - Rewrite of the preparation mechanism of the blogging categories
+          to avoid multiple visiting of files.
+
+Version 3.3.1
+=============
+
+        - added custom variable ewo-img-extensions which holds accepted
+          extensions for images of the site.
+          

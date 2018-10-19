@@ -2,7 +2,7 @@
 
 * Introduction
 
-This is EWO 3.2
+This is EWO 3.3.1
 
 EWO is an extension to the orgmode HTML publishing mechanism. It allows
 to define a simple static web site based on /categories/. 

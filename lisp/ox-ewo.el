@@ -175,6 +175,12 @@ additional documents in a website."
   :group 'ewo
   :type 'regexp)
 
+(defcustom ewo-img-extensions "jpg\\|gif\\|png\\|svg"
+  "Regular expression describing allowed extensions for
+images in a website."
+  :group 'ewo
+  :type 'regexp)
+
 (defcustom ewo-html-postamble 
   "<!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src=\"<lisp>(ewo-rootlink ewo:catlevel)</lisp>js/bootstrap.min.js\"></script>"
@@ -597,7 +603,7 @@ automatically performed by the publication function
 	  (list
 	   "images"
 	   :base-directory (concat root "/images")
-	   :base-extension "jpg\\|gif\\|png"
+	   :base-extension ewo-img-extensions
 	   :exclude "^\\(.*~\\|#.*\\)$"
 	   :recursive t
 	   :publishing-directory (concat publish "/images")
