@@ -100,4 +100,4 @@
 				  (when (< lg limit) (concat (funcall post-blank (cadr elt)) (loop (cdr tr))))))
 			 (t (loop (cdr tr))))))))))))
 
-(provide 'ewo-test)
+(provide 'ewo-text)
