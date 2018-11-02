@@ -4,7 +4,7 @@
 
 * Introduction
 
-  This is EWO 3.3.1
+  This is EWO 3.4
 
   EWO is an extension to the orgmode HTML publishing mechanism. It allows
   to define a simple static web site based on /categories/. 
@@ -31,6 +31,13 @@
 
   Release 3.2 introduces a very crude templating mechanism. It also
   corrects some bugs.
+
+  Release 3.3 introduces non new functionnality, but the preparation
+  functions for the blogging categories went under a major
+  rewrite. The result is a general speedup of the publishing process.
+
+  Release 3.4 introduces a new algorithm to compute the text excerpts
+  displayend in the index pages of blogging categories.
 
 * WARNING
 
@@ -79,6 +86,11 @@
     (define-key org-mode-map (kbd "C-c C-=") 'ewo-publish)
   #+END_SRC
 
+  Same remark for the new article function :
+  #+BEGIN_SRC emacs-lisp
+    (define-key org-mode-map (kbd "C-c C-+") 'ewo-new-article)
+  #+END_SRC
+
   Customize the variable =org-export-backends= and add the =ewo=
   backend to it.
 
@@ -116,6 +128,8 @@
    This variable contains a string which defines the name of your website. 
 
    The definition of this variable is not mandatory.
+
+   Default: ~"EWO"~
 
 ** variable ~ewo-root-dir~ 
 
@@ -188,14 +202,24 @@
 
 ** variable =ewo-home-name=
 
-   The name of the homepage. Default is "Home".
+   The name of the homepage. Default is ~"Home"~.
 
 ** variable =ewo-doc-extensions=
    
    A regular expression defining the allowed extensions for the
    additionnal documents of your site, which are stored in the
    =documents= directory (see section [[#SiteStructure][Site Structure]]).
-   
+
+   Default is ~pdf\\|doc\\|odt\\|ods\\|odp\\|odg\\|tar.gz\\|tgz\\|tar.bz2\\|zip~
+
+** variable =ewo-img-extensions=
+
+   A regular expression defining the allowed extensions for the
+   additionnal images of your site, which are stored in the
+   =images= directory (see section [[#SiteStructure][Site Structure]]).
+
+   Default is ~"jpg\\|gif\\|png\\|svg"~
+
 ** variable =ewo-html-preamble=
 
    A string containing HTML code to be included in the preamble of a page.
@@ -835,8 +859,8 @@
   body of an article.
 
   These templates are used by the interactive function
-  ~ewo-new-article~ whose aim is to create a new article buffer. This
-  function creates all the necessary headers (~#+TITLE:~, etc.) and
-  then insert the choosen template.
+  ~ewo-new-article~ whose aim is to create a new blog article
+  buffer. This function creates all the necessary headers (~#+TITLE:~,
+  etc.) and then insert the choosen template.
 
 

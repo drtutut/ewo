@@ -45,4 +45,8 @@ Version 3.3.1
 
         - added custom variable ewo-img-extensions which holds accepted
           extensions for images of the site.
-          
+
+Version 3.4
+===========
+
+        - New article hader excerpting algorithm.
