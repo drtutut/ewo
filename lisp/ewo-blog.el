@@ -24,6 +24,7 @@
 ;;; This file contains functions devoted to blog articles management.
 (require 'uuidgen)
 (require 'ewo-util)
+(require 'ewo-text)
 
 (defun ewo:article-compare (art1 art2)
   "Compares 2 items ART1 and ART2 in the blog articles list. The
@@ -82,11 +83,18 @@ if it does not exist."
           (ewo:read-org-option "EWO_ARTICLE_ID"))
       uid)))    
 
+;;; TODO: Continuer ici
+(defun ewo:extract-excerpt (s)
+  "Extracts an excerpt of `ewo-excerpt-size' long from a string.
+
+Take care of the links, do not cut words.")
+  
+
 (defun ewo:get-buffer-excerpt ()
   "Read the ewo_head block, and return an excerpt of
 `ewo-excerpt-size' long."
   (let* ((chapo (ewo:read-org-block "ewo_head"))
-         (exc   (if chapo (substring chapo 0 (min ewo-excerpt-size (length chapo))) "")))
+         (exc   (if chapo (ewo:cut-excerpt chapo ewo-excerpt-size) "")))
     (concat exc (if (or (string= exc "") (< (length chapo) ewo-excerpt-size)) "" "…"))))
 
 
