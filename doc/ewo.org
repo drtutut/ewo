@@ -53,7 +53,10 @@
    - avl-tree
    - uuidgen
    - cl-lib
+   - s
 
+
+   All these packages are available on elpa repository.
      
    Do not try to replace bootstrap 3.x with bootstrap 4.x : it wont
    work, as EWO relies on the ~panel~ divs which disappeared from 4.x.
