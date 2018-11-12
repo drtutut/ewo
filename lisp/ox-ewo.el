@@ -1299,7 +1299,13 @@ configuration."
 (defun ewo-html-inner-template (contents info)
   "Return body of document string after HTML conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist used
-as a communication channel."
+as a communication channel.
+
+This template differs from the original `org-html-inner-template'
+in the navigation bar generation. Instead of generation only
+simple table of content as the org html exporter does, it
+generates the navigation bar (among categories and tags), and a
+toc."
   (concat
    (ewo-html-navbar info)
    ;; Document contents.

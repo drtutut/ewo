@@ -792,6 +792,14 @@
         section modifiée est encore plus sûr.
     #+END_SRC
 
+    Ewo will automatically :
+    - enclose all the section and its content into a ~div.panel~
+      (indeed this is org task)
+    - enclose the header into a ~div.panel-heading~
+    - enclose the content of the section into a ~div.panel-body~
+    - And of course, because of the ~panel-danger~, panel will be
+      style appropriately.
+
 ** Bootstrap rows and columns
    :PROPERTIES:
    :END:
