@@ -50,3 +50,8 @@ Version 3.4
 ===========
 
         - New article hader excerpting algorithm.
+
+Version 3.4.2
+=============
+
+	Bugfix release. Problems in ewo-article-new
