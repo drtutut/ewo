@@ -1158,7 +1158,7 @@ property list containing the pubishing configuration."
   "Generate the tags.org file and the index files for each tag
 from the `ewo:tags' tree.
 
-PROPS is the property list containing the pubishing
+PROPS is the property list containing the publishing
 configuration."
   (ewo:clean-tag-files)
   (let* ((filename (expand-file-name "tags.org" ewo-root-dir))

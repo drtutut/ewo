@@ -143,9 +143,10 @@ category name."
 
 (defun ewo:prepare-cat-index-buffer (dir cat)
   "Prepare the category CAT index rooted in DIR.
-Returns a pair (BUFFER . LEVEL) where BUFFER is the buffer of the
-category index, and LEVEL is the heading level of the toc in
-index."
+Return a list (BUFFER VISITING LEVEL) where BUFFER is the buffer
+of the category index, VISITING is the same as BUFFER if the file
+was already visited, nil otherwise, and LEVEL is the heading
+level of the toc in index."
   (let ((idxfile (concat (file-name-as-directory dir) "index.org")))
     (let* ((exist (file-exists-p idxfile))
            (visiting (find-buffer-visiting idxfile))
@@ -154,8 +155,10 @@ index."
         (unless exist
           (ewo:create-minimal-cat-index cat))
         (goto-char (point-min))
-        (cons buf
-              (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}}")))
+        (list buf
+	      visiting
+					; removed spurious } at the end. TODO test
+              (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}")))
                 (if (null sres)
                     (progn
                                         ; create section
@@ -190,19 +193,25 @@ index."
 
 (defun ewo:prepare-blog-index-buffer (dir)
   "Prepare the blog global index rooted in DIR.
-Returns a pair (BUFFER . LEVEL) where BUFFER is the buffer of the
-category index, and LEVEL is the heading level of the toc in
-index."
+Return a list (BUFFER VISITING LEVEL) where BUFFER is the buffer
+of the category index, VISITING is the same as BUFFER if the
+category index was already visited, nil otherwise, and LEVEL is
+the heading level of the toc in index.
+
+The function return nil if no entry with
+a \"HTML_CONTAINER_CLASS\" property with value \"exo-toc\" is
+found. "
   (let* ((idxfile (concat (file-name-as-directory dir) "index.org"))
          (visiting (find-buffer-visiting idxfile))
-         (buf      (find-file-noselect idxfile)))
+         (buf      (or visiting (find-file-noselect idxfile))))
     (with-current-buffer buf
       (goto-char (point-min))
-      (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS=\{ewo-toc}")))
+					; remove \ before { ? TODO testing
+      (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}")))
         (if (null sres)
             (progn
               (set-buffer-modified-p nil)
-              (kill-buffer)
+              (unless visiting (kill-buffer))
               nil)
           (progn
                                         ; clean content, place cursor
@@ -223,7 +232,7 @@ index."
                 (goto-char (if pos (point) (point-max)))
                 (delete-region begin (point))
                 (newline 2))
-              (cons buf level))))))))
+              (list buf visiting level))))))))
 
   
 (defun ewo:make-toc-heading (art fmt)
@@ -253,23 +262,25 @@ by FMT. Returns a string."
 
 (defun ewo:blog-gen-cat-index (dir cat)
   "Generate category CAT index in directory DIR."
-  (let* ((info  (ewo:prepare-cat-index-buffer dir cat))
-         (buf   (car info))
-         (level (cdr info)))
-    (set-buffer buf)
-    (setq ewo:blog-category-article-list (sort ewo:blog-category-article-list 'ewo:article-compare))
-    (dolist (a ewo:blog-category-article-list)
+  (let* ((info     (ewo:prepare-cat-index-buffer dir cat))
+         (buf      (car info))
+	 (visiting (car (cdr info)))
+         (level    (car (cdr (cdr info)))))
+    (unwind-protect
+	(with-current-buffer buf
+	  (setq ewo:blog-category-article-list (sort ewo:blog-category-article-list 'ewo:article-compare))
+	  (dolist (a ewo:blog-category-article-list)
                                         ; for each article
-      (insert (format "%s [[file:%s][%s]]"
-                      (make-string (+ 1 level) ?*)
-                      (file-relative-name (plist-get (cdr a) :file) dir)
-                      (ewo:make-toc-heading a ewo-blog-toc-entry-format)))
-      (newline 2)
+	    (insert (format "%s [[file:%s][%s]]"
+			    (make-string (+ 1 level) ?*)
+			    (file-relative-name (plist-get (cdr a) :file) dir)
+			    (ewo:make-toc-heading a ewo-blog-toc-entry-format)))
+	    (newline 2)
                                         ; add a link around excerpt ?
-      (insert (plist-get (cdr a) :excerpt))
-      (newline 2))
-    (save-buffer)
-    (kill-buffer)))
+	    (insert (plist-get (cdr a) :excerpt))
+	    (newline 2))
+	  (save-buffer))
+      (unless visiting (kill-buffer)))))
 
 
 (defun ewo:gen-blog-index (dir)
@@ -277,9 +288,10 @@ by FMT. Returns a string."
   (let ((info (ewo:prepare-blog-index-buffer dir)))
     (unless (null info)
       (setq ewo:blog-global-article-list (sort ewo:blog-global-article-list 'ewo:article-compare))
-      (let ((firsts (ewo:list-bslice ewo-last-articles ewo:blog-global-article-list))
-            (buf    (car info))
-            (level  (cdr info)))
+      (let ((firsts   (ewo:list-bslice ewo-last-articles ewo:blog-global-article-list))
+            (buf      (car info))
+	    (visiting (car (cdr info)))
+            (level    (car (cdr (cdr info)))))
         (set-buffer buf)
         (dolist (a firsts)
           (insert (format "%s [[file:%s][%s]]"
