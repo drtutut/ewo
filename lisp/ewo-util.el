@@ -24,7 +24,7 @@
 ;;; This file contains utility functions.
 (require 'cl-lib)
 
-;; named let (fron scheme !) is so cool.
+;; named let (from scheme !) is so cool.
 (defmacro nlet (name bindings &rest body)
   "The so cool \"named let\" construct borrowed from scheme. It
   avoids a lot of horrible while loops with side effects."
@@ -34,7 +34,8 @@
      (,name ,@(mapcar 'cadr bindings))))
 
 
-(defun ewo:fix-timestamp-string (date-string)
+;; unused
+(defun ewo--fix-timestamp-string (date-string)
   "Return \"yyyy-mm-dd\" format of `DATE-STRING'.
 
 For example:
@@ -128,7 +129,7 @@ T[0-9][0-9]:[0-9][0-9]" date-str)
           (concat yyyy "-" mm "-" dd))))))
 
 ;; TODO should not be needed anymore. check
-(defun ewo:compare-standard-date (date1 date2)
+(defun ewo--compare-standard-date (date1 date2)
   "Compare two standard ISO 8601 format dates DATE1 and
 DATE2. format is as below:
 
@@ -159,7 +160,7 @@ Code borrowed from org-page."
 
 
 
-(defun ewo:read-org-option (option)
+(defun ewo--read-org-option (option)
   "Read OPTION value of org file opened in current buffer.
 e.g:
 
@@ -172,7 +173,7 @@ will return \"this is title\" if OPTION is \"TITLE\""
       (when (re-search-forward match-regexp nil t)
         (match-string-no-properties 2 nil)))))
 
-(defun ewo:read-org-block (blname)
+(defun ewo--read-org-block (blname)
   "Read the data in a block in the current buffer. Return nil if
 match is not found. BLNAME is the name of the block."
   (let* ((begin  (concat "^\\s-*#\\+[bB][eE][gG][iI][nN]_" blname "\\s-*"))
@@ -182,9 +183,9 @@ match is not found. BLNAME is the name of the block."
       (goto-char (point-min))
       (when (re-search-forward (concat begin inside end) nil t)
         (let ((match (match-string-no-properties 1 nil)))
-          (ewo:remove-indent match))))))
+          (ewo--remove-indent match))))))
                 
-(defun ewo:remove-indent (text)
+(defun ewo--remove-indent (text)
   "Remove indentation in TEXT."
   (let ((out "")
         (start nil)
@@ -198,7 +199,7 @@ match is not found. BLNAME is the name of the block."
         (loop (cdr l))))
     out))
   
-(defun ewo:list-bslice (num lst)
+(defun ewo--list-bslice (num lst)
   "returns a list containing the NUM first elements of list
 LST. If LST has fewer elements than NUM, a copy of LST is
 returned."

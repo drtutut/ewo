@@ -24,15 +24,15 @@
 ;;; This file contains functions devoted to text processing.
 
 
-(defvar ewo:header-restriction
+(defvar ewo--header-restriction
   '(link superscript subscript underline bold italic code verbatim strike-through latex-fragment radio-target target timestamp line-break entity footnote-reference))
 
-(defun ewo:cut-excerpt (s limit)
+(defun ewo--cut-excerpt (s limit)
   "Cut string S to length LIMIT."
-  (let ((tree (org-element-parse-secondary-string s ewo:header-restriction)))
-    (ewo:extract-text-tree tree limit)))
+  (let ((tree (org-element-parse-secondary-string s ewo--header-restriction)))
+    (ewo--extract-text-tree tree limit)))
 
-(defun ewo:extract-text-tree (tree limit)
+(defun ewo--extract-text-tree (tree limit)
   "extract a text of maximum length LIMIT from parse tree TREE."
   (let* ((lg         0) ; hard to avoid side effect on this...
 	 (addlg      (lambda (n) (setq lg (+ lg n)) nil))

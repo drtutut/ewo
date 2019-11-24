@@ -26,17 +26,17 @@
 (require 'avl-tree)
 (require 'ewo-util)
 
-(defun ewo:tagtree-cmpfunc (elt1 elt2)
+(defun ewo--tagtree-cmpfunc (elt1 elt2)
   (string< (car elt1) (car elt2)))
 
-(defun ewo:tagtree-updatefunc (new match)
+(defun ewo--tagtree-updatefunc (new match)
   (cons (car new) (cons (cadr new) (cdr match))))
 
-(defun ewo:add-to-tag-map (tag title file)
-  "a reference to file in the tag entry of the `ewo:tags' table."
-  (avl-tree-enter ewo:tags (list tag (cons file title)) 'ewo:tagtree-updatefunc))
+(defun ewo--add-to-tag-map (tag title file)
+  "a reference to file in the tag entry of the `ewo--tags' table."
+  (avl-tree-enter ewo--tags (list tag (cons file title)) 'ewo--tagtree-updatefunc))
 
-(defun ewo:tagfile-header (&optional tagname rep-underscore)
+(defun ewo--tagfile-header (&optional tagname rep-underscore)
   "Generates the header of the tag file. If optionnal aggument
 TAGNAME is provided, the function generates the index for this
 tag, otherwise it consider that this is the global tags.org
@@ -60,7 +60,7 @@ If REP-UNDERSCORE is specified, it represent a string which replaces any undersc
 	    (concat "site " ewo-name)))
   (newline 2))
 
-(defun ewo:tagfile-tag-content (tag)
+(defun ewo--tagfile-tag-content (tag)
   "Generates the content of the tagfile for tag TAG in the
 current buffer."
   (dolist (pair (cdr tag))
@@ -69,7 +69,7 @@ current buffer."
       (insert "- [[file:../" file "][" title "]]")
       (newline))))
 
-(defun ewo:gen-tagfile (file tag)
+(defun ewo--gen-tagfile (file tag)
   "Generate the tag FILE for TAG."
   (save-excursion
     (let* ((visiting (find-buffer-visiting file))
@@ -77,12 +77,12 @@ current buffer."
       (unwind-protect
           (with-current-buffer buffer
             (erase-buffer)
-            (ewo:tagfile-header (car tag) " ")
-            (ewo:tagfile-tag-content tag)
+            (ewo--tagfile-header (car tag) " ")
+            (ewo--tagfile-tag-content tag)
             (save-buffer))
         (unless visiting (kill-buffer buffer))))))
 
-(defun ewo:tagfile (tag &optional ext)
+(defun ewo--tagfile (tag &optional ext)
   "computes the filename corresponding to a tag. TAG is the name
 of the tag. EXT is the extention. if nil, \".org\" is assumed"
                                         ; simple solution (see later
@@ -94,32 +94,32 @@ of the tag. EXT is the extention. if nil, \".org\" is assumed"
   (when (string-match "^[[:word:]0-9_@]+$" tag)
     (concat tag (if (and ext (stringp  ext)) ext ".org"))))
 
-(defun ewo:process-tag (tag &optional rep-underscore)
+(defun ewo--process-tag (tag &optional rep-underscore)
   "Generates an entry in the index (current buffer). Generates
 the file corresponding to the tag TAG. 
 
 If specified, REP-UNDERSCORE is a string which will replace any
 '_' character in the tag."
-  (let ((tagfile (ewo:tagfile (car tag))))
+  (let ((tagfile (ewo--tagfile (car tag))))
     (if (not (null tagfile))
 	(let ((printtag (if rep-underscore (replace-regexp-in-string "_" rep-underscore (car tag)) (car tag))))
           (insert "- [[file:tags/" tagfile "][" printtag "]] " (format "%d"(length (cdr tag))))
           (newline)
-          (ewo:gen-tagfile (concat "tags/" tagfile) tag))
+          (ewo--gen-tagfile (concat "tags/" tagfile) tag))
       (message "skipping bad tag : %s" (car tag)))))
   
 
-(defun ewo:tagfile-content ()
+(defun ewo--tagfile-content ()
   "Generate the tags.org file at the root of the site. Generate
 the files for each tag in the tags directory."
-  (let ((stack (avl-tree-stack ewo:tags)))
+  (let ((stack (avl-tree-stack ewo--tags)))
     (nlet loop ((tag (avl-tree-stack-pop stack)))
       (unless (null tag)
-        (ewo:process-tag tag " ")
+        (ewo--process-tag tag " ")
         (loop (avl-tree-stack-pop stack))))))
 
 
-(defun ewo:clean-tag-files ()
+(defun ewo--clean-tag-files ()
   "Clean the directory containing tag files. Create it if it does
 not exist."
   (let ((dir (concat ewo-root-dir "/tags")))
@@ -131,7 +131,7 @@ not exist."
               (delete-file f)))))))
 
 
-(defun ewo:validate-tag (level tag &optional rep-underscore)
+(defun ewo--validate-tag (level tag &optional rep-underscore)
   "Verify that a TAG is a valid tag. LEVEL is the level of the category.
 
 If TAG is valid, generate a string containing and html anchor
@@ -139,11 +139,11 @@ linking TAG to the tag file.
 
 If specified, REP-UNDERSCORE is a string which will replace any
 '_' character in the tag."
-  (let ((tagfile-link (concat (ewo-rootlink level) "tags/" (ewo:tagfile tag ".html")))
+  (let ((tagfile-link (concat (ewo-rootlink level) "tags/" (ewo--tagfile tag ".html")))
         (tagfile-test (concat
                        (file-name-as-directory ewo-root-dir)
                        "tags/"
-                       (ewo:tagfile tag ".org"))))
+                       (ewo--tagfile tag ".org"))))
     (when (file-exists-p tagfile-test)
       (let ((printtag (if rep-underscore (replace-regexp-in-string "_" rep-underscore tag) tag)))
 	(concat "<a href=\"" tagfile-link "\">"
@@ -169,7 +169,7 @@ This function is callable via the <lisp></lisp> mechanism."
          ((null l) "")
          ((string= (car l) "") (loop (cdr l)))
          (t (concat
-             (ewo:validate-tag catlevel (car l) " ")
+             (ewo--validate-tag catlevel (car l) " ")
              (when (not (null (cdr l)))
                (if sep sep " "))
              (loop (cdr  l)))))))))

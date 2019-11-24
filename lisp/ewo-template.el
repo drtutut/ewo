@@ -27,14 +27,14 @@
 (require 'ewo-util)
 (require 'ewo-blog)
 
-(defvar ewo:cat-history nil
+(defvar ewo--cat-history nil
   "History of categores (for use in minibuffer).")
 
-(defvar ewo:template-history nil
+(defvar ewo--template-history nil
   "History of templates (for use in minibuffer).")
 
 
-(defun kw->tags (kwl &optional repl)
+(defun ewo--kw->tags (kwl &optional repl)
   "Transform a list of keywords into a list of tags. KWL is a
 string containing keywords separated by a [, ] sequence. The
 result is a string of tags surrounded by [:].
@@ -71,22 +71,22 @@ article indexing. TEMPLATE is the name of the template."
                                                  ewo-categories "/")
                                       default)
                               (mapcar #'(lambda (var) (car var)) ewo-categories)
-                              nil t nil 'ewo:cat-history default))
+                              nil t nil 'ewo--cat-history default))
           (catinfo	(assoc-string c ewo-categories))
           (is-blog 	(eq (plist-get (cdr catinfo) :type) 'blog))
           (f 		(read-string "File name: "))
           (tt 		(read-string "Title: "))
           (d 		(read-string "Description: "))
           (k 		(read-string "Keywords (separated by comma and space [, ]): "))
-          (tg 		(when is-blog (read-string "Tags (surrounded by colons [:]): " (kw->tags k))))
+          (tg 		(when is-blog (read-string "Tags (surrounded by colons [:]): " (ewo--kw->tags k))))
           (templates 	(directory-files
 			 (concat (file-name-as-directory ewo-root-dir)
 				 (file-name-as-directory ewo-template-dir))
 			 nil "^.+\\.org$"))
-	  (def-tpl 	(if (null ewo:template-history) (car templates) (car ewo:template-history)))
+	  (def-tpl 	(if (null ewo--template-history) (car templates) (car ewo--template-history)))
           (tp 		(completing-read (format "Template [%s]: " def-tpl)
 					 (mapcar #'(lambda (var) var) templates)
-					 nil t nil 'ewo:template-history def-tpl)))
+					 nil t nil 'ewo--template-history def-tpl)))
      (list c f tt d k tg tp)))
   (let ((path (concat
                (file-name-as-directory ewo-root-dir)
@@ -129,7 +129,7 @@ article indexing. TEMPLATE is the name of the template."
                           (if (string= tags "") "<TODO: insert your tags here>\n" tags))
 
                 "")
-              (if (ewo:cat-is-blog-p cat)
+              (if (ewo--cat-is-blog-p cat)
                   "#+EWO_STATE:   unpublished"
                 ""))
       (when (and template (not (string= template "")))
