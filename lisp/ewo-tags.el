@@ -83,7 +83,7 @@ current buffer."
         (unless visiting (kill-buffer buffer))))))
 
 (defun ewo--tagfile (tag &optional ext)
-  "computes the filename corresponding to a tag. TAG is the name
+  "Compute the filename corresponding to a tag.  TAG is the name
 of the tag. EXT is the extention. if nil, \".org\" is assumed"
                                         ; simple solution (see later
                                         ; if something more robust is
@@ -94,16 +94,53 @@ of the tag. EXT is the extention. if nil, \".org\" is assumed"
   (when (string-match "^[[:word:]0-9_@]+$" tag)
     (concat tag (if (and ext (stringp  ext)) ext ".org"))))
 
+(defun ewo--tag-max-ref ()
+  "Return the number of references of the tag having the greatest
+number of references."
+  (apply 'max (avl-tree-mapcar (lambda (e) (cdr e)) ewo--tags)))
+
+(defun ewo--tag-size (refs maxrefs minsize maxsize)
+  "Compute the size (in em units) of a tag having a REFS count.
+MAXREFS is the greatest number of references, MINSIZE the
+smallest acceptable size (in em unit), MAXSIZE the biggest
+acceptable size (in em units).
+
+The computation method depends of the value of `ewo-tag-sizing'."
+  (cond
+   ((eq ewo-tag-sizing 'linear)
+    (/ (+ (* minsize (- maxrefs refs)) (* maxsize (- refs 1))) (- maxrefs 1)))
+   ((eq ewo-tag-sizing 'log)
+					; log regression
+    (let* ((mean-y    (/ (+ minsize maxsize) 2))
+	   (mean-lnx  (/ (+ (log 1) (log maxrefs)) 2))
+	   (sxx       (- (+ (* (log 1) (log 1)) (* (log maxrefs) (log maxrefs))) (* 2 (* mean-lnx mean-lnx))))
+	   (sxy       (- (+ (* (log 1) minsize) (* (log maxrefs) maxsize)) (* 2 (* mean-lnx mean-y))))
+	   (b         (/ sxy sxx))
+	   (a         (- mean-y (* b mean-lnx))))
+      (message "a = %f" a)
+      (message "b = %f" b)
+      (+ a (* b (log refs)))))
+   (t 1)))
+	   
+   
+
 (defun ewo--process-tag (tag &optional rep-underscore)
-  "Generates an entry in the index (current buffer). Generates
-the file corresponding to the tag TAG. 
+  "Generate an entry in the tag index (current buffer).
+Also generate the file corresponding to the tag TAG.
 
 If specified, REP-UNDERSCORE is a string which will replace any
 '_' character in the tag."
   (let ((tagfile (ewo--tagfile (car tag))))
     (if (not (null tagfile))
 	(let ((printtag (if rep-underscore (replace-regexp-in-string "_" rep-underscore (car tag)) (car tag))))
-          (insert "- [[file:tags/" tagfile "][" printtag "]] " (format "%d"(length (cdr tag))))
+          (insert "- ")
+	  (when ewo-tag-class
+	    (newline)
+	    (org-cycle)
+	    (insert "#+ATTR_HTML: :class " ewo-tag-class)
+	    (newline)
+	    (org-cycle))
+	  (insert "[[file:tags/" tagfile "][" printtag "]] " (format "%d"(length (cdr tag))))
           (newline)
           (ewo--gen-tagfile (concat "tags/" tagfile) tag))
       (message "skipping bad tag : %s" (car tag)))))
@@ -112,6 +149,9 @@ If specified, REP-UNDERSCORE is a string which will replace any
 (defun ewo--tagfile-content ()
   "Generate the tags.org file at the root of the site. Generate
 the files for each tag in the tags directory."
+  (when ewo-tag-container-class
+    (insert "#+ATTR_HTML: :class " ewo-tag-container-class)
+    (newline))
   (let ((stack (avl-tree-stack ewo--tags)))
     (nlet loop ((tag (avl-tree-stack-pop stack)))
       (unless (null tag)

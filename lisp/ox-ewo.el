@@ -353,6 +353,36 @@ keyword can be:
   :group 'ewo
   :type 'string)
 
+(defcustom ewo-tag-container-class "tag-container"
+  "Tag container CSS class. Used in the tags.org file.  This
+container element contains all tags."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-tag-class "label label-success"
+  "Tag CSS class. Used in the tags.org file."
+  :group 'ewo
+  :type 'string)
+
+(defcustom ewo-tag-sizing nil
+  "Sizing of tags in the tags.or list.  Possible values:
+
+nil
+
+no sizing (default)
+
+linear
+
+linear proportional size
+
+log
+
+logarithmic sizing."
+  :group 'ewo
+  :type '(choice (const :tag "Linear" 'linear)
+		 (const :tag "Log" 'log)
+		 (const :tag "None" nil)))
+  
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
