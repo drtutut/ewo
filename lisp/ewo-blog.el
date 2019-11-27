@@ -211,8 +211,9 @@ found. "
       (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}")))
         (if (null sres)
             (progn
+	      (message "=== %s : pas de header de la classe ewo-toc ===" idxfile)
               (set-buffer-modified-p nil)
-              (unless visiting (kill-buffer))
+              (unless visiting (kill-buffer buf))
               nil)
           (progn
                                         ; clean content, place cursor
@@ -281,7 +282,7 @@ by FMT. Returns a string."
 	    (insert (plist-get (cdr a) :excerpt))
 	    (newline 2))
 	  (save-buffer))
-      (unless visiting (kill-buffer)))))
+      (unless visiting (kill-buffer buf)))))
 
 
 (defun ewo--gen-blog-index (dir)

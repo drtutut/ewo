@@ -134,7 +134,7 @@ not exist."
   "Clean the directory containing the html tag files. Do nothning
 if it does not exist."
   (let ((dir (concat publish-dir "/tags")))
-    (when (file-exist-p dir)
+    (when (file-exists-p dir)
       (let ((ls (directory-files dir t)))
 	(dolist (f ls)
 	  (when (and (file-writable-p f) (file-regular-p f))

@@ -1169,7 +1169,7 @@ configuration."
           (ewo--tagfile-header)
           (ewo--tagfile-content)
           (save-buffer))
-      (unless visiting (kill-buffer)))))
+      (unless visiting (kill-buffer buffer)))))
 
 ;;; preparation functions for blog indexing
 
