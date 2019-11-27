@@ -1147,7 +1147,7 @@ communication channel."
 
 (defun ewo--prepare-blog-index (props)
   "Prepares the global list of blog articles. PROPS is the
-property list containing the pubishing configuration."
+property list containing the publishing configuration."
   (let ((dir (plist-get props :base-directory)))
     (ewo--gen-blog-index dir)))
 
@@ -1159,6 +1159,7 @@ from the `ewo--tags' tree.
 PROPS is the property list containing the publishing
 configuration."
   (ewo--clean-tag-files)
+  (ewo--clean-html-tag-files (plist-get ewo--current-config :publish-dir))
   (let* ((filename (expand-file-name "tags.org" ewo-root-dir))
          (visiting (find-buffer-visiting filename))
          (buffer (or visiting (find-file-noselect filename))))

@@ -130,6 +130,15 @@ not exist."
           (if (and (file-writable-p f) (file-regular-p f))
               (delete-file f)))))))
 
+(defun ewo--clean-html-tag-files (publish-dir)
+  "Clean the directory containing the html tag files. Do nothning
+if it does not exist."
+  (let ((dir (concat publish-dir "/tags")))
+    (when (file-exist-p dir)
+      (let ((ls (directory-files dir t)))
+	(dolist (f ls)
+	  (when (and (file-writable-p f) (file-regular-p f))
+	    (delete-file f)))))))
 
 (defun ewo--validate-tag (level tag &optional rep-underscore)
   "Verify that a TAG is a valid tag. LEVEL is the level of the category.
