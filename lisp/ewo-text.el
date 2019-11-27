@@ -38,7 +38,7 @@
 	 (addlg      (lambda (n) (setq lg (+ lg n)) nil))
 	 (post-blank (lambda (pl)
 		       (let ((n (plist-get pl :post-blank)))
-			 (message "post-blank: (%d)" n)
+			 ;; (message "post-blank: (%d)" n)
 			 (funcall addlg n)
 			 (make-string n ?\s))))) 
     (nlet loop ((tr tree))

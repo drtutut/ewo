@@ -211,7 +211,6 @@ found. "
       (let ((sres (org-map-entries (lambda () (point)) "HTML_CONTAINER_CLASS={ewo-toc}")))
         (if (null sres)
             (progn
-	      (message "=== %s : pas de header de la classe ewo-toc ===" idxfile)
               (set-buffer-modified-p nil)
               (unless visiting (kill-buffer buf))
               nil)
