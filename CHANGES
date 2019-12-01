@@ -55,3 +55,20 @@ Version 3.4.2
 =============
 
 	Bugfix release. Problems in ewo-article-new
+
+Version 3.4.3
+=============
+
+	Bugfix release.
+
+    - index files properly closed at the end of the publishing process
+    - generated html tag files deleted before regeneration (in order to
+      avoid trashing with unused tags).
+    - code revamp: replacing ':' with '--' in internal function names.
+
+Version 3.5
+===========
+
+	Introducing tag sizing in tags.org index file. Tag label size
+	can be dynamically constrained to the number of references of
+	the tag. See domcumentation for details.

@@ -2,26 +2,26 @@
 
 * Introduction
 
-This is EWO 3.4.2
+This is EWO 3.5
 
-EWO is an extension to the orgmode HTML publishing mechanism. It allows
-to define a simple static web site based on /categories/. 
+EWO is an extension to the orgmode HTML publishing mechanism.  It
+allows to define a simple static web site based on /categories/.
 
 Namely, a category is a directory in the web site tree, associated
-with an entry in the navigation bar. This allows the automatic
+with an entry in the navigation bar.  This allows the automatic
 generation of a navigation bar.
 
-Categories are of two kinds : static categories let the user organise
+Categories are of two kinds: static categories let the user organise
 its pages freely, blog categories allows automatic generation of table
 of content and tag index. See the manual for details.
 
 EWO relies on the bootstrap framework.
 
-Besides, EWO brings some tools to easily use some functionnalities
-of the bootstrap framework.
+Besides, EWO brings some tools to easily use some functionnalities of
+the bootstrap framework.
 
-EWO started as a personnal project : allows the generation of my
-professionnal web pages from orgmode documents. 
+EWO started as a personnal project: allows the generation of my
+professionnal web pages from orgmode documents.
 
 Version 2.0 is a partial rewrite of the original project, to define
 EWO as a derived back-end of the org html back-end.
