@@ -94,10 +94,14 @@ of the tag. EXT is the extention. if nil, \".org\" is assumed"
   (when (string-match "^[[:word:]0-9_@]+$" tag)
     (concat tag (if (and ext (stringp  ext)) ext ".org"))))
 
-(defun ewo--tag-max-ref ()
+(defvar ewo--tag-max-ref 1
+  "Number of references of the tag having the greatest number of
+references.")
+
+(defun ewo--compute-tag-max-ref ()
   "Return the number of references of the tag having the greatest
 number of references."
-  (apply 'max (avl-tree-mapcar (lambda (e) (cdr e)) ewo--tags)))
+  (setq ewo--tag-max-ref (apply 'max (avl-tree-mapcar (lambda (e) (length (cdr e))) ewo--tags))))
 
 (defun ewo--tag-size (refs maxrefs minsize maxsize)
   "Compute the size (in em units) of a tag having a REFS count.
@@ -139,11 +143,15 @@ If specified, REP-UNDERSCORE is a string which will replace any
 	    (when ewo-tag-class
 	      (insert " :class " ewo-tag-class))
 	    (when ewo-tag-sizing
-	      (insert " :style font-size: "
-		      (ewo--tag-size (length (cdr tag)) (ewo-tag-max-ref) ewo-tag-minsize ewo-tag-maxsize) "em;"))
+	      (insert
+	       " :style font-size: "
+	       (number-to-string
+		(ewo--tag-size (length (cdr tag)) ewo--tag-max-ref ewo-tag-minsize ewo-tag-maxsize))
+	       "em;"))
 	    (newline)
 	    (org-cycle))
-	  (insert "[[file:tags/" tagfile "][" printtag "]] " (format "%d"(length (cdr tag))))
+	  (insert "[[file:tags/" tagfile "][" printtag "]] "
+		  (if ewo-tag-show-numrefs (format "%d"(length (cdr tag))) ""))
           (newline)
           (ewo--gen-tagfile (concat "tags/" tagfile) tag))
       (message "skipping bad tag : %s" (car tag)))))
@@ -155,6 +163,7 @@ the files for each tag in the tags directory."
   (when ewo-tag-container-class
     (insert "#+ATTR_HTML: :class " ewo-tag-container-class)
     (newline))
+  (ewo--compute-tag-max-ref)
   (let ((stack (avl-tree-stack ewo--tags)))
     (nlet loop ((tag (avl-tree-stack-pop stack)))
       (unless (null tag)

@@ -399,7 +399,10 @@ is used if `ewo-tag-sizing' is not nil."
                                         ; positive floats
                           ((lambda (x) (and (floatp x) (> x 0.0))))))
 
-
+(defcustom ewo-tag-show-numrefs nil
+  "Wether or not showing number of tag references."
+  :group 'ewo
+  :type 'boolean)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
