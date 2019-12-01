@@ -1,4 +1,4 @@
-;; Copyright 2017-2018 Éric Würbel
+;; Copyright 2017-2019 Éric Würbel
 
 ;; This file is part of EWO.
 
@@ -382,7 +382,23 @@ logarithmic sizing."
   :type '(choice (const :tag "Linear" 'linear)
 		 (const :tag "Log" 'log)
 		 (const :tag "None" nil)))
-  
+
+(defcustom ewo-tag-minsize 0.6
+  "Minimum size of tags in the tag index, in em units. This size
+is used if `ewo-tag-sizing' is not nil."
+  :group 'ewo
+  :type '(restricted-sexp :match-alternatives
+                                        ; positive floats
+                          ((lambda (x) (and (floatp x) (> x 0.0))))))
+
+(defcustom ewo-tag-maxsize 2.0
+  "Maximum size of tags in the tag index, in em units. This size
+is used if `ewo-tag-sizing' is not nil."
+  :group 'ewo
+  :type '(restricted-sexp :match-alternatives
+                                        ; positive floats
+                          ((lambda (x) (and (floatp x) (> x 0.0))))))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

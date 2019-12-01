@@ -1,4 +1,4 @@
-;; Copyright 2017-2018 Éric Würbel
+;; Copyright 2017-2019 Éric Würbel
 
 ;; This file is part of EWO.
 
@@ -121,8 +121,6 @@ The computation method depends of the value of `ewo-tag-sizing'."
       (message "b = %f" b)
       (+ a (* b (log refs)))))
    (t 1)))
-	   
-   
 
 (defun ewo--process-tag (tag &optional rep-underscore)
   "Generate an entry in the tag index (current buffer).
@@ -134,10 +132,15 @@ If specified, REP-UNDERSCORE is a string which will replace any
     (if (not (null tagfile))
 	(let ((printtag (if rep-underscore (replace-regexp-in-string "_" rep-underscore (car tag)) (car tag))))
           (insert "- ")
-	  (when ewo-tag-class
+	  (when (or ewo-tag-class ewo-tag-sizing)
 	    (newline)
 	    (org-cycle)
-	    (insert "#+ATTR_HTML: :class " ewo-tag-class)
+	    (insert "#+ATTR_HTML:")
+	    (when ewo-tag-class
+	      (insert " :class " ewo-tag-class))
+	    (when ewo-tag-sizing
+	      (insert " :style font-size: "
+		      (ewo--tag-size (length (cdr tag)) (ewo-tag-max-ref) ewo-tag-minsize ewo-tag-maxsize) "em;"))
 	    (newline)
 	    (org-cycle))
 	  (insert "[[file:tags/" tagfile "][" printtag "]] " (format "%d"(length (cdr tag))))
