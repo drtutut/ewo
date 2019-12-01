@@ -6,14 +6,14 @@
 
   This is EWO 3.4
 
-  EWO is an extension to the orgmode HTML publishing mechanism. It allows
-  to define a simple static web site based on /categories/. 
+  EWO is an extension to the orgmode HTML publishing mechanism.  It
+  allows to define a simple static web site based on /categories/.
 
   Namely, a category is a directory in the web site tree, associated
-  with an entry in the navigation bar. This allows the automatic
+  with an entry in the navigation bar.  This allows the automatic
   generation of a navigation bar.
 
-  EWO heavily relies on the [[http://getbootstrap.com/][boostrap]] framework. For now it uses the
+  EWO heavily relies on the [[http://getbootstrap.com/][boostrap]] framework.  For now it uses the
   3.3.7 version of bootstrap.
 
   Besides, EWO brings some tools to easily use some functionnalities
@@ -37,7 +37,7 @@
   rewrite. The result is a general speedup of the publishing process.
 
   Release 3.4 introduces a new algorithm to compute the text excerpts
-  displayend in the index pages of blogging categories.
+  displayed in the index pages of blogging categories.
 
 * WARNING
 
@@ -58,15 +58,15 @@
 
    All these packages are available on elpa repository.
      
-   Do not try to replace bootstrap 3.x with bootstrap 4.x : it wont
+   Do not try to replace bootstrap 3.x with bootstrap 4.x: it wont
    work, as EWO relies on the ~panel~ divs which disappeared from 4.x.
 
    Support for both bootstrap 3.x and 4.x is planned. 
 
 ** Installing
 
-  Add the directory of ewo lisp files to the =load-path= variable. For
-  example :
+  Add the directory of ewo lisp files to the =load-path= variable.
+  For example :
 
   #+BEGIN_SRC emacs-lisp
     (add-to-list 'load-path "~/local/emacs-lisp/ewo-3.0beta")
@@ -107,7 +107,8 @@
 
 * Starting a fresh project
 
-  1. Copy the content of the =www= directory in ewo to the root of your project.
+  1. Copy the content of the =www= directory in ewo to the root of
+     your project.
   2. Define the variables of your project, as described in the section
      [[#DefEWOProject][Defining an EWO project]].
   3. The root of your website, and the root of each category *must*
@@ -120,7 +121,7 @@
 
   Unlike the org HTML publishing mechanism, in order to define an EWO
   project, you do not need to configure the
-  =org-publish-project-alist= variable. EWO will generate
+  =org-publish-project-alist= variable.  EWO will generate
   automatically this alist based on your definition of the categories.
 
   We now present the different variables which are used to define an
@@ -136,7 +137,7 @@
 
 ** variable ~ewo-root-dir~ 
 
-   Root directory of the org-source of the website. That is, the full
+   Root directory of the org-source of the website.  That is, the full
    path of the directory containing the org files containing the pages
    of your future site, along with the auxiliary files like css
    stylesheets, javascript files, images\dots
@@ -145,26 +146,26 @@
 
 ** variable =ewo-configurations=
 
-   Association list of alternative publishing configurations for
-   ewo. The CAR of each element of the alist is a string, uniquely
-   identifying the configuration. the CDR of each element is a well
+   Association list of alternative publishing configurations for ewo.
+   The CAR of each element of the alist is a string, uniquely
+   identifying the configuration.  the CDR of each element is a well
    formed property list with an event number of elements, alternating
-   keys and values, which specifies the configuration values. The
+   keys and values, which specifies the configuration values.  The
    possible configuration values are:
 
-   - ~:publish-dir~ :: The publishing directory of the website. This
+   - ~:publish-dir~ :: The publishing directory of the website.  This
                        variable contains the full path where your
-                       project will be exported in its html form. It
-                       can be a path on the local machine,but also a
-                       tramp-like pathname defining a path on a remote
-                       machine[fn:1].
+                       project will be exported in its html form.  It
+                       can be a path on the local machine, but also
+                       a tramp-like pathname defining a path on
+                       a remote machine[fn:1].
                         
                        
    This allows for multiple publishing configurations (for example you
-   can have a test configuration and a production configuration.
+   can have a test configuration and a production configuration).
 
    When the function ~ewo-publish~ is invoked interactively, it asks
-   for the identifier of the configuration. By default, it uses the
+   for the identifier of the configuration.  By default, it uses the
    first item of this alist.
 
    It is mandatory that you define at least one entry in this alist.
@@ -174,7 +175,7 @@
 ** variable =ewo-categories=
 
    This variable contains an alist describing the categories of your website.
-   each entry of the alist contain :
+   Each entry of the alist contain :
 
    - the category id :: this is a string which acts as a category selector.
    - =:label= property :: this is a string defining the label of the
@@ -186,19 +187,19 @@
         bootstrap framework (see example below)
    - =:type= ::  this is a category type which can be :
      + =static= :: a static category, that is, a freely organizable
-                   subtree of org documents, each one generating a
-                   HTML page. The only mandatory file is =index.org=
-                   which must be present in the category
-                   directory. [[#dcad7a4d-c1a9-4ad3-872e-864b247317f2][More on static categories]]
+                   subtree of org documents, each one generating
+                   a HTML page.  The only mandatory file is
+                   =index.org= which must be present in the category
+                   directory.  [[#dcad7a4d-c1a9-4ad3-872e-864b247317f2][More on static categories]]
      + =blog= :: a blogging category. The file =index.org= is
-                 mandatory in the directory tree. The user can freely
+                 mandatory in the directory tree.  The user can freely
                  edit this file, but it has to contain a section
                  heading with a =HTML_CONTAINER_CLASS= multivalued
-                 property containing the ~ewo-toc~ class. It will
+                 property containing the ~ewo-toc~ class.  It will
                  contain the table of content of the category
-                 (automatically generated). Other org files in the
+                 (automatically generated).  Other org files in the
                  subtree are articles, which will be published under
-                 certain conditions. [[#d4d360f0-db39-4814-9f70-b3097834153c][More on blogging categories]]
+                 certain conditions.  [[#d4d360f0-db39-4814-9f70-b3097834153c][More on blogging categories]]
 
                  
    You must define at least one category.
@@ -229,52 +230,52 @@
 
 ** variable =ewo-html-postamble=
 
-   A string containing HTML code to be included in the postamble of a
-   page. Actually contains the inclusion of the bootstrap javascript
-   part.
+   A string containing HTML code to be included in the postamble of
+   a page.  Actually contains the inclusion of the bootstrap
+   javascript part.
 
 ** variable =ewo-html-head=
 
    A string containing the /head of the home page and of any page
-   generated at the root of the site/. This code will be included in
-   the <head></head> section. Be careful if you tweak this variable,
+   generated at the root of the site/.  This code will be included in
+   the <head></head> section.  Be careful if you tweak this variable,
    because it contains the inclusion of different CSS stylesheet
    (bootstrap in particular, but also jquery).
 
 ** variable =ewo-cat-html-head=
 
    A string containing the head of the pages contained in a category.
-   This code will be included in the <head></head> section. Be careful
-   if you tweak this variable, because it contains the inclusion of
-   different CSS stylesheet (bootstrap in particular, but also
-   jquery). it also uses the ~<lisp></lisp>~ mechanism to universalize
-   links to files. See documentation of the [[#5b64f846-e6bb-4b14-8aef-404220426e02][~<lisp></lisp>~ mechanism]]
-   for more details.
+   This code will be included in the <head></head> section.  Be
+   careful if you tweak this variable, because it contains the
+   inclusion of different CSS stylesheet (bootstrap in particular, but
+   also jquery).  it also uses the ~<lisp></lisp>~ mechanism to
+   universalize links to files.  See documentation of the
+   [[#5b64f846-e6bb-4b14-8aef-404220426e02][~<lisp></lisp>~ mechanism]] for more details.
 
 ** variable =ewo-navbar-class=
 
    This variable is a string indicating the class of the bootstrap
-   navigation bar. By default, this variable is initialized with the
+   navigation bar.  By default, this variable is initialized with the
    value =navbar navbar-inverse navbar-fixed-top=.
 
 ** variable =ewo-navbar-container=
 
-   A string describing the class of the bootstrap navbar
-   container. Usual values are ~container~ and ~container-fluid~.  The
-   default value is ~container-fluid~.
+   A string describing the class of the bootstrap navbar container.
+   Usual values are ~container~ and ~container-fluid~.  The default
+   value is ~container-fluid~.
 
 ** variable =ewo-navbar-ul=
 
-   A string describing the class of the bootstrap ~<ul>~ element in a
-   navbar. Usual values are ~nav navbar~ for a left-aligned list, and
-   ~nav navbar navbar-right~ for a right-aligned list.
+   A string describing the class of the bootstrap ~<ul>~ element in
+   a navbar.  Usual values are ~nav navbar~ for a left-aligned list,
+   and ~nav navbar navbar-right~ for a right-aligned list.
 
 ** variable =ewo-ext-link-addition=
    :PROPERTIES:
    :CUSTOM_ID: ExtLink
    :END:
    
-   A string describing the class of external links. To activate this
+   A string describing the class of external links.  To activate this
    feature please consult the documentation of
    [[#ExtLinkAdd][=ewo-ext-link-addition-type=]].
 
@@ -283,7 +284,7 @@
    :CUSTOM_ID: IntLink
    :END:
 
-   A string describing the class of internal links. To activate this
+   A string describing the class of internal links.  To activate this
    feature please consult the documentation of
    [[#IntLinkAdd][=ewo-int-link-addition-type=]].
 
@@ -293,15 +294,15 @@
    :END:
    
    An atom describing the type of addtion performed on external
-   links. The possible values are :
+   links.  The possible values are :
 
    - ~anchor~ :: The content of variable [[#ExtLink][=ewo-ext-link-addition=]] is
-        interpreted as a class attribute specification which is added
-        to the external link =<a>= element.
+                 interpreted as a class attribute specification which
+                 is added to the external link =<a>= element.
    - ~span~ :: The content of variable [[#ExtLink][=ewo-ext-link-addition=]] is
-        interpreted as a span class attribute specification. A
-        =<span>= element is added at the end of the link with the
-        specified class.
+               interpreted as a span class attribute specification.
+               A =<span>= element is added at the end of the link with
+               the specified class.
    - ~nil~ :: No transformation is performed on external links.
 
 ** variable =ewo-int-link-addition-type=
@@ -313,12 +314,12 @@
    links. The possible values are :
 
    - =anchor= :: The content of variable [[#IntLink][=ewo-int-link-addition=]] is
-        interpreted as a class attribute specification which is added
-        to the internal link =<a>= element.
+                 interpreted as a class attribute specification which
+                 is added to the internal link =<a>= element.
    - =span= :: The content of variable [[#IntLink][=ewo-int-link-addition=]] is
-        interpreted as a span class attribute specification. A
-        =<span>= element is added at the end of the internal link with
-        the specified class.
+               interpreted as a span class attribute specification.
+               A =<span>= element is added at the end of the internal
+               link with the specified class.
    - =nil= :: No transformation is performed on internal links.
 
 ** variable =ewo-blog-toc-name=
@@ -338,9 +339,8 @@
    :CUSTOM_ID: ba2eeced-28a9-4696-ac8b-8e4f56e76762
    :END:
 
-   The format of a toc entry for blogging categories. It is a
-   string, which contains special sequences ~%keyword%~, where
-   keyword can be:
+   The format of a toc entry for blogging categories.  It is a string,
+   which contains special sequences ~%keyword%~, where keyword can be:
 
    - =date= : the date of the article
    - =title= : the title of the article
@@ -390,21 +390,21 @@
        :type blog)))           
 #+END_SRC
 
-  This configuration defines a site whose name is "Retry/Abort". It
+  This configuration defines a site whose name is "Retry/Abort".  It
   contains one publishing configuration whose local root directory is
   =~/Documents/www/MySite/org= and whose publishing directory is
   =~/public_html=.
 
-  There are three categories in this project :
-  - two static categories : a teaching category and a research
-    category. The teaching category will be labeled "Teaching" and its
-    subdirectory will be =~/Documents/www/MySite/org/Teaching=. It
-    will use the glyphicon =glyphicon-education= as an icon. The
+  There are three categories in this project:
+  - two static categories: a teaching category and a research
+    category.  The teaching category will be labeled "Teaching" and
+    its subdirectory will be =~/Documents/www/MySite/org/Teaching=.
+    It will use the glyphicon =glyphicon-education= as an icon.  The
     research category will be labeled "Research" and its subdirectory
-    will be =~/Documents/www/MySite/org/Research=. It will use the
+    will be =~/Documents/www/MySite/org/Research=.  It will use the
     glyphicon =glyphicon-eye-open= as an icon.
-  - a blog category : it will be labelled "News" and will be rooted in
-    =~/Documents/www/MySite/org/News=. It will use the glyphicon
+  - a blog category: it will be labelled "News" and will be rooted in
+    =~/Documents/www/MySite/org/News=.  It will use the glyphicon
     =glyphicon-pencil=.
 
 * Site structure 
@@ -434,17 +434,18 @@
 		 \-- documents
   #+END_EXAMPLE
 
-  The minimal content of these directory is defined hereafter. Note
-  that the mandatory files are provided by ewo. The =tags= directory
-  is not necessarily created, and is relatied to the tags system. See
+  The minimal content of these directory is defined hereafter.  Note
+  that the mandatory files are provided by ewo.  The =tags= directory
+  is not necessarily created, and is relatied to the tags system.  See
   [[*Tags][tags]] for details.
 
 ** the =css= directory
 
    Should contain at least the following files (provided that you did
    not customize the =ewo-html-head= and the =ewo-cat-html-head=, see
-   below) :
-   - =mytypo.css= :: Typographic definitions. Typically font definitions.
+   below):
+   - =mytypo.css= :: Typographic definitions.  Typically font
+                     definitions.
    - =bootstrap.min.css= :: Bootstrap css definitions.
    - =mystyle.css= ::  your personnal css definitions goes here.
 
@@ -452,7 +453,7 @@
 
    Should contain at least the following files (provided that you did
    not customize the =ewo-html-head= and the =ewo-cat-html-head=, see
-   below) :
+   below):
    - =html5shiv.min.js= :: javascript needed by bootstrap (for IE8) 
    - =respond.min.js= :: javascript needed by bootstrap (for IE8) 
 
@@ -462,11 +463,11 @@
 
 ** the =images= directory
 
-   There are no requirements in this directory. You should put your images here.
+   There are no requirements in this directory.  You should put your images here.
 
 ** the =documents= directory
 
-   There are no requirements in this directory. You should put the
+   There are no requirements in this directory.  You should put the
    documents linked to the pages of your site here.
 
 ** Example
@@ -496,9 +497,9 @@
   :END:
   
   In a static category, the only mandatory file is =index.org=.  The
-  remaining files are totally under your responsability. All the
-  remaining files should be org files. Only org files will be
-  published. SThis means that, if your pages need extra files, like
+  remaining files are totally under your responsability.  All the
+  remaining files should be org files.  Only org files will be
+  published.  This means that, if your pages need extra files, like
   images or additionnal documents, these files must be present in the
   subtrees rooted in =documents= and =images= directories.
 
@@ -510,11 +511,12 @@
   :CUSTOM_ID: d4d360f0-db39-4814-9f70-b3097834153c
   :END:
   
-  In a blogging category, the only mandatory file is =index.org=. Its
+  In a blogging category, the only mandatory file is =index.org=.  Its
   content is free, but it should contain a headline with property
-  ~HTML_CONTAINER_CLASS~. This property must contain at least a value
+  ~HTML_CONTAINER_CLASS~.  This property must contain at least a value
   ~ewo-toc~, indicating that the table of content of this category
-  will be generated under this headline. All other org files are articles.
+  will be generated under this headline.  All other org files are
+  articles.
 
 ** Articles
    :PROPERTIES:
@@ -627,6 +629,8 @@
    :CUSTOM_ID:c1d29f01-0038-493a-98dd-2ab9bbb4ccc1
    :END:
 
+*** The tag system
+
    The tag system allows to classify thematically blog articles, that
    is, articles which are [[#1c6e6e19-535d-44f2-944a-2606affada4d][published]].
 
@@ -634,14 +638,41 @@
    option of org mode.
 
    During the publication of the site, tags will be collected and :
-   - a global tags.org file will be generated in the root directory,
-     containing a listing all collected tags and how many blog
+   - a global ~tags.org~ file will be generated in the root directory,
+     containing a listing of all collected tags and how many blog
      articles mention it.
    - For each tag ~tagname~ a file ~tags/tagname.org~ will be
      generated, containing links to the articles mentionning this tag.
-   - a "Tags" menu entry is generated. This entry appears ob the home
-     page and in blogging categories. If no tags have bee collected,
+   - a "Tags" menu entry is generated.  This entry appears ob the home
+     page and in blogging categories.  If no tags have bee collected,
      then no menu entry is generated.
+
+*** Tags size
+
+    When generatig the tags.org file, it is possible to ask ewo to
+    dynamically adapt the size of the tag depending on the number of
+    articles referenced by this tag.  This is process is controlled by
+    the following variables:
+
+    - =ewo-tag-sizing= :: Controls how to perform dynamic tag sizing:
+      + =nil= : no dynamic sizing (this is the default)
+      + ='linear= : linear sizing between min and max values (see below)
+      + ='log= logarithmix sizing between min and max values (see below)
+    - =ewo-tag-minsize= :: Minimum size of tags in the tag index, in
+         em units.  This size is used if =ewo-tag-sizing= is not nil.
+    - =ewo-tag-maxsize= :: Maximum size of tags in the tag index, in
+         em units.  This size is used if =ewo-tag-sizing= is not nil.
+	 
+*** Other tag index customization
+
+    The following variables allows more control over the tag index
+    display:
+    - =ewo-tag-show-numrefs= :: if true, the number of references of
+         a tag is displayed next to the tag (this is the default).
+    - =ewo-tag-class= :: Tag CSS class. Used in the =tags.org= file.
+    - =ewo-tag-container-class= :: Tag container CSS class.  Used in
+         the =tags.org= file.  This container element contains all
+         tags.
 
 * Deeper customization
 ** the ~<lisp></lisp>~ mechanism
@@ -649,12 +680,13 @@
    :CUSTOM_ID: 5b64f846-e6bb-4b14-8aef-404220426e02
    :END:
 
-   EWO enables the insertion of ~<lisp></lisp>~ constructs in your pages.
+   EWO enables the insertion of ~<lisp></lisp>~ constructs in your
+   pages.
 
-   These constructs allows you to call lisp functions to produce a
-   textual result which is then substituted to the <lisp></lisp>
-   construct. Actually, you cannot execute any lisp expression,
-   because it would be a *monstruous* security hole. The lisp
+   These constructs allows you to call lisp functions to produce
+   a textual result which is then substituted to the ~<lisp></lisp>~
+   construct.  Actually, you cannot execute any lisp expression,
+   because it would be a *monstruous* security hole.  The lisp
    expression should be :
    - a functionn call. Each argument should be in turn an authorized
      expression.
@@ -668,10 +700,10 @@
      + the =ewo-rootlink= function, which generates an up link to root
        of the site depending on LEVEL parameter.
      + the =ewo-filetags= function, which generates a list of the tags
-       used in a blog article. It has a mandatory CATNAME argument
+       used in a blog article.  It has a mandatory CATNAME argument
        which is the category name, and an optionnal SEP argument which
        is a string used as a separator between the tags (a space by
-       default). The function generates a list of tags appearing in a
+       default).  The function generates a list of tags appearing in a
        blog article, and links them to the corresponding tag page (see
        documentation of the [[*Tags][tag system]]).
      + arithmetic functions : ~+~, ~-~, ~*~, ~/~, ~%~, ~mod~,
@@ -680,7 +712,7 @@
    - =ewo-template-vars= :: List of authorized variables for ~<lisp>~
         constructs. Initially contains :
      + the variable ~ewo:catlevel~, which contains the category level
-       in the context of the call. Note that this is NOT a a global
+       in the context of the call.  Note that this is NOT a a global
        variable. 
      + the variable ~ewo:catname~, which contains the category name in
        the context of the call.
@@ -706,19 +738,19 @@
    ewo:catlevel)</lisp>@@~.
 
    You can also use these constructs in the ewo configuration
-   variables which accept HTML : ~ewo-html-postample~,
+   variables which accept HTML: ~ewo-html-postample~,
    ~ewo-html-preamble~, ~ewo-html-head~, ~ewo-cat-html-head~.
 
    For now there is no clear documentation on how to extend this
-   mechanism (adding functions or args). If you whish to add you own
+   mechanism (adding functions or args).  If you whish to add you own
    functions and variables, please check the ~ewo-filter-prepost~
    function which implements the internal machinery of ~<lisp></lisp>~
    constructs.
 
 ** the ~<ewo-static></ewo-static>~ elements 
 
-   Allows to insert HTML code only in pages of static categories. Very
-   useful combined to the ~<lisp>~ mechanism. For example :
+   Allows to insert HTML code only in pages of static categories.
+   Very useful combined to the ~<lisp>~ mechanism. For example :
 
    #+BEGIN_SRC org
      ,#+BEGIN_EXPORT html
@@ -731,7 +763,7 @@
 
 ** the ~<ewo-blog></ewo-blog>~ elements 
 
-   Allows to insert HTML code only in pages of blog categories. Very
+   Allows to insert HTML code only in pages of blog categories.  Very
    useful combined to the ~<lisp>~ mechanism. For example :
 
    #+BEGIN_SRC org
@@ -745,7 +777,7 @@
 
 ** Bootstrap panels
 
-   There are two ways to create bootstrap panels with EWO. You can
+   There are two ways to create bootstrap panels with EWO.  You can
    either include any text within a section into a panel, or turn an
    entire section (and its subsections) into a bootstrap panel.
 
@@ -853,25 +885,25 @@
 
 ** Table of contents of pages/articles
 
-   Ewo is able to generate a table of contents for any page as a
-   dropdown menu in the navigation bar. It bases the generation on the
-   ~toc:~ and ~num:~ options of the org document.
+   Ewo is able to generate a table of contents for any page as
+   a dropdown menu in the navigation bar.  It bases the generation on
+   the ~toc:~ and ~num:~ options of the org document.
 
 * Publishing the site
 
-  To publish a site, invoke the ~ewo-publish~ function. This function
+  To publish a site, invoke the ~ewo-publish~ function.  This function
   asks for a configuration id (see ~ewo-configurations~) doc.
 
 * Templating
 
   You can define a directory which will contain /templates/ using the
-  custom variable ~ewo-template-dir~. Actually, a template is
+  custom variable ~ewo-template-dir~.  Actually, a template is
   essentially a boilerplate org file containing the skeleton of the
   body of an article.
 
   These templates are used by the interactive function
-  ~ewo-new-article~ whose aim is to create a new blog article
-  buffer. This function creates all the necessary headers (~#+TITLE:~,
-  etc.) and then insert the choosen template.
+  ~ewo-new-article~ whose aim is to create a new blog article buffer.
+  This function creates all the necessary headers (~#+TITLE:~, etc.)
+  and then insert the choosen template.
 
 
