@@ -101,6 +101,7 @@ references.")
 (defun ewo--compute-tag-max-ref ()
   "Return the number of references of the tag having the greatest
 number of references."
+  (message "############# ZORGL")
   (setq ewo--tag-max-ref (apply 'max (avl-tree-mapcar (lambda (e) (length (cdr e))) ewo--tags))))
 
 (defun ewo--tag-size (refs maxrefs minsize maxsize)

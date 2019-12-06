@@ -1209,16 +1209,17 @@ PROPS is the property list containing the publishing
 configuration."
   (ewo--clean-tag-files)
   (ewo--clean-html-tag-files (plist-get ewo--current-config :publish-dir))
-  (let* ((filename (expand-file-name "tags.org" ewo-root-dir))
-         (visiting (find-buffer-visiting filename))
-         (buffer (or visiting (find-file-noselect filename))))
-    (unwind-protect
-        (with-current-buffer buffer
-          (erase-buffer)
-          (ewo--tagfile-header)
-          (ewo--tagfile-content)
-          (save-buffer))
-      (unless visiting (kill-buffer buffer)))))
+  (unless (avl-tree-empty ewo--tags) 
+    (let* ((filename (expand-file-name "tags.org" ewo-root-dir))
+           (visiting (find-buffer-visiting filename))
+           (buffer (or visiting (find-file-noselect filename))))
+      (unwind-protect
+          (with-current-buffer buffer
+            (erase-buffer)
+            (ewo--tagfile-header)
+            (ewo--tagfile-content)
+            (save-buffer))
+        (unless visiting (kill-buffer buffer))))))
 
 ;;; preparation functions for blog indexing
 
