@@ -1,0 +1,55 @@
+
+# Table of Contents
+
+1.  [Introduction](#org9ce756e)
+2.  [Workflow](#orgfc1804c)
+
+
+
+<a id="org9ce756e"></a>
+
+# Introduction
+
+This is EWO 3.5
+
+EWO is an extension to the orgmode HTML publishing mechanism.  It
+allows to define a simple static web site based on *categories*.
+
+Namely, a category is a directory in the web site tree, associated
+with an entry in the navigation bar.  This allows the automatic
+generation of a navigation bar.
+
+Categories are of two kinds: static categories let the user organise
+its pages freely, blog categories allows automatic generation of table
+of content and tag index. See the manual for details.
+
+EWO relies on the bootstrap framework.
+
+Besides, EWO brings some tools to easily use some functionnalities of
+the bootstrap framework.
+
+EWO started as a personnal project: allows the generation of my
+professionnal web pages from orgmode documents.
+
+Version 2.0 is a partial rewrite of the original project, to define
+EWO as a derived back-end of the org html back-end.
+
+For installation and usage instructions see the documentation in the
+doc/ folder.
+
+
+<a id="orgfc1804c"></a>
+
+# Workflow
+
+1.  Define the structure of the site, that is, define
+    *categories*. Decide for each category if it's a *static*
+    category or a *blog* category.
+2.  Define a root directory for publication.
+3.  Define plublication configurations (at least one).
+4.  Fine tune different aspects (like classes used for some
+    elements).
+5.  Write your pages / articles.
+6.  Generate the site locally.
+7.  sync it with a remote host using rsync-like tool.
+
