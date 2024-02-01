@@ -4,3 +4,4 @@
 doc/.*
 doc/#*
 sandbox/
+testconf/
